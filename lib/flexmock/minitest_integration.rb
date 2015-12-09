@@ -74,8 +74,7 @@ class FlexMock
       @assertions = 0
     end
 
-    def filtered_backtrace
-      bt = caller
+    def filtered_backtrace(bt = caller)
       flexmock_dir = File.expand_path(File.dirname(__FILE__))
       while bt.first.start_with?(flexmock_dir)
           bt.shift
@@ -84,6 +83,7 @@ class FlexMock
     end
 
     def make_assertion(msg, backtrace = caller, &block)
+      backtrace = filtered_backtrace(backtrace)
       assert(yield, msg)
     rescue Exception => e
       e.set_backtrace backtrace
