@@ -27,7 +27,7 @@ class FlexMock
     end
 
     def check(msg, &block)
-      check(msg, &block)
+      make_assertion(msg, &block)
     end
 
     class AssertionFailedError < StandardError; end
