@@ -58,6 +58,23 @@ class BaseClassTest < Minitest::Test
     assert_match(/method:.+bark/i, ex.message)
   end
 
+  def test_can_stub_subclasses_of_BasicObject_on_a_single_line
+    klass = Class.new(BasicObject) do
+      def stub_this; end
+    end
+    mock = flexmock(:on, klass, stub_this: 10)
+    assert_equal 10, mock.stub_this
+  end
+
+  def test_can_stub_subclasses_of_BasicObject
+    klass = Class.new(BasicObject) do
+      def stub_this; end
+    end
+    mock = flexmock(:on, klass)
+    mock.should_receive(:stub_this).and_return(10)
+    assert_equal 10, mock.stub_this
+  end
+
   def test_can_explicitly_stub_non_class_defined_methods
     mock.should_receive(:baz).explicitly.and_return(:bar)
     assert_equal :bar, mock.baz

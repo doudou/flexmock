@@ -147,7 +147,9 @@ class FlexMock
 
   def flexmock_based_on(base_class)
     @base_class = base_class
-    should_receive(:class => base_class)
+    if base_class <= Kernel
+      should_receive(:class => base_class)
+    end
   end
 
   CALL_VALIDATOR = CallValidator.new
