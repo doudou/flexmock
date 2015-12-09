@@ -25,6 +25,10 @@ class BaseClassTest < Minitest::Test
     assert_equal FooBar, mock.class
   end
 
+  def test_base_class_auto_mocks_kind_of
+    assert mock.kind_of?(FooBar)
+  end
+
   def test_base_class_auto_mocks_base_class_methods
     assert_equal FlexMock.undefined, mock.foo
   end

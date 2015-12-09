@@ -149,6 +149,7 @@ class FlexMock
     @base_class = base_class
     if base_class <= Kernel
       should_receive(:class => base_class)
+      should_receive(:kind_of?).and_return { |against| base_class <= against }
     end
   end
 
