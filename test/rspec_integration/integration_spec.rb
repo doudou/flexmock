@@ -27,30 +27,27 @@ describe "FlexMock in a RSpec example" do
   specify "should have an error when a mock is not called" do
     m = flexmock("Expectation Failured")
     m.should_receive(:hi).with().once
-    lambda {
-      flexmock_verify
-    }.should raise_error(RSpec::Expectations::ExpectationNotMetError, /\bhi\b.*incorrect.*times/i)
+    expect(lambda { flexmock_verify }).
+      to raise_error(RSpec::Expectations::ExpectationNotMetError, /\bhi\b.*incorrect.*times/i)
   end
 
   specify "should be able to create a stub" do
     s = "Hello World"
     flexmock(:base, s).should_receive(:downcase).with().once.and_return("hello WORLD")
 
-    s.downcase.should == "hello WORLD"
+    expect(s.downcase).to eq("hello WORLD")
   end
 
   specify "Should show an example failure" do
-    lambda {
-      1.should == 2
-    }.should raise_error(RSpec::Expectations::ExpectationNotMetError,
+    expect(lambda { expect(1).to eq(2) }).
+      to raise_error(RSpec::Expectations::ExpectationNotMetError,
       /expected: 2.*got: 1/m)
   end
 
   specify "Should show how mocks are displayed in error messages" do
     m = flexmock("x")
-    lambda {
-      m.should == 2
-    }.should raise_error(RSpec::Expectations::ExpectationNotMetError, /got: <FlexMock:x>/)
+    expect(lambda { expect(m).to eq(2) }).
+       to raise_error(RSpec::Expectations::ExpectationNotMetError, /got: <FlexMock:x>/)
   end
 
 end

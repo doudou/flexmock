@@ -22,10 +22,18 @@ class FlexMock
       end
 
       def failure_message_for_should
+        failure_message
+      end
+
+      def failure_message
         describe_spy_expectation(@spy, @method_name, @args, @options)
       end
 
       def failure_message_for_should_not
+        failure_message_when_negated
+      end
+
+      def failure_message_when_negated
         describe_spy_negative_expectation(@spy, @method_name, @args, @options)
       end
 

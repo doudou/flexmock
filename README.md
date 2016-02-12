@@ -116,7 +116,7 @@ to 0.6.0 required the explicit include.
 ## RSpec Integration
 
 FlexMock also supports integration with the RSpec behavior
-specification framework.  Starting with version 0.9.0 of RSpec, you
+specification framework.  Starting with version 2.11.0 of RSpec, you
 will be able to say:
 
 ```ruby
