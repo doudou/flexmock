@@ -32,11 +32,6 @@ if defined?(Minitest::Test)
       failures.clear
       assert @closed
     end
-
-    def flexmock_close
-      @closed = true
-      super
-    end
   end
 else
   class TestFlexmockMinitest < MiniTest::Unit::TestCase
@@ -53,7 +48,7 @@ else
       begin
         super
         failed = false
-      rescue Exception => e
+      rescue Exception
         failed = true
       end
       assert_equal @should_fail, failed, "Expected failed to be #{@should_fail}"
