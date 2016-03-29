@@ -57,6 +57,7 @@ class FlexMock
   # container for this mock.
   def initialize(name="unknown", container=nil)
     @flexmock_name = name
+    @flexmock_closed = false
     @expectations = Hash.new
     @ignore_missing = false
     @verified = false
