@@ -16,6 +16,20 @@ You can install FlexMock with the following command.
  $ gem install flexmock
 ```
 
+## Changes
+
+Only significant changes (new APIs, deprecated APIs or backward-compatible
+changes) are documented here, a.k.a. minor or major version bumps. If you want a
+detailed changelog, go over the commit log in github (it's pretty low-traffic)
+
+2.1.0:
+
+ - added `#and_iterates` to fix some shortcomings of `#and_yield` without
+   breaking backward compatibility
+ - strict partial mocks (and "based mocks" if `FlexMock.partials_are_based` is
+   set to true) are now based on the object's singleton class, instead of its
+   class.
+
 ## Simple Example
 
 We have a data acquisition class (<code>TemperatureSampler</code>)
