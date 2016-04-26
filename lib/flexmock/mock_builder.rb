@@ -105,9 +105,15 @@ class FlexMock
       when :base, :safe
         opts.safe_mode = (args.shift == :safe)
         opts.domain_obj = args.shift
-      when :on
-        args.shift
-        opts.base_class = args.shift
+      when :on, :strict
+        if args.shift == :strict
+          if !opts.domain_obj
+            raise ArgumentError, "cannot use :strict outside a partial mock"
+          end
+          opts.base_class = opts.domain_obj.singleton_class
+        else
+          opts.base_class = args.shift
+        end
         opts.name ||= "#{opts.base_class} Mock"
       else
         CONTAINER_HELPER.extensions.each do |ext|

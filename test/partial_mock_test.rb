@@ -540,4 +540,11 @@ class TestStubbing < Minitest::Test
         obj.inspect
       end
   end
+
+  def test_the_strict_keyword_sets_the_base_class_to_the_partial_mock_class
+    klass = Class.new
+    obj = klass.new
+    mock = flexmock(obj, :strict)
+    assert_equal klass, mock.flexmock_get.flexmock_base_class
+  end
 end

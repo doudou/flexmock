@@ -146,6 +146,10 @@ class FlexMock
     @expectations[method_name]
   end
 
+  def flexmock_base_class
+    @base_class
+  end
+
   def flexmock_based_on(base_class)
     @base_class = base_class
     if base_class <= Kernel
