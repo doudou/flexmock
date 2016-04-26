@@ -110,7 +110,7 @@ class FlexMock
           if !opts.domain_obj
             raise ArgumentError, "cannot use :strict outside a partial mock"
           end
-          opts.base_class = opts.domain_obj.singleton_class
+          opts.base_class = opts.domain_obj.class
         else
           opts.base_class = args.shift
         end
