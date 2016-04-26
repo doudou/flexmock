@@ -30,6 +30,14 @@ class BasedPartialsTest < Minitest::Test
     end
   end
 
+  def test_based_partials_allow_stubbing_methods_defined_on_the_singleton_class
+    dog = Dog.new
+    m = Module.new { def sit; end }
+    dog.extend m
+    flexmock(dog).should_receive(:sit => :mock_value)
+    assert_equal :mock_value, dog.sit
+  end
+
   def test_based_partials_allow_stubbing_defined_methods
     dog = Dog.new
     flexmock(dog).should_receive(:bark => :mock_value)

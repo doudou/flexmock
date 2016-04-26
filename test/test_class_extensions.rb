@@ -31,4 +31,12 @@ class ClassExtensionsTest < Minitest::Test
     assert ! Dog.flexmock_defined?(:jump)
   end
 
+  def test_flexmock_defined_the_method_through_a_partial_mock
+    obj = Dog.new
+    FlexMock.use(obj) do |mock|
+      mock.should_receive(:jump)
+      assert obj.singleton_class.method_defined?(:jump)
+      assert !obj.singleton_class.flexmock_defined?(:jump)
+    end
+  end
 end

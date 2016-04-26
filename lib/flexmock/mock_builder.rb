@@ -95,7 +95,7 @@ class FlexMock
     # Set the base class if not defined and partials are based.
     def set_base_class(opts)
       if ! opts.base_class && opts.domain_obj && FlexMock.partials_are_based
-        opts.base_class = opts.domain_obj.class
+        opts.base_class = opts.domain_obj.singleton_class
       end
     end
 
@@ -110,7 +110,7 @@ class FlexMock
           if !opts.domain_obj
             raise ArgumentError, "cannot use :strict outside a partial mock"
           end
-          opts.base_class = opts.domain_obj.class
+          opts.base_class = opts.domain_obj.singleton_class
         else
           opts.base_class = args.shift
         end
