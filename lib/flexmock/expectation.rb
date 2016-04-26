@@ -116,7 +116,9 @@ class FlexMock
         block = args.last
         values = (@yield_queue.size == 1) ? @yield_queue.first : @yield_queue.shift
         if block && block.respond_to?(:call)
-          @return_value = block.call(*values)
+          values.each do |v|
+            @return_value = block.call(*v)
+          end
         else
           fail MockError, "No Block given to mock with 'and_yield' expectation"
         end
@@ -251,10 +253,30 @@ class FlexMock
     # An error is raised if the mocked method is not called with a
     # block.
     def and_yield(*yield_values)
-      @yield_queue << yield_values
+      @yield_queue << [yield_values]
     end
     alias :yields :and_yield
 
+    # Declare that the mocked method is expected to be given a block
+    # and that the block will iterate over the provided values.
+    # If the mock is called multiple times, mulitple
+    # <tt>and_iterates</tt> declarations can be used to supply different
+    # values on each call.
+    #
+    # The iteration is queued with the yield values provided with {#and_yield}.
+    #
+    # An error is raised if the mocked method is not called with a
+    # block.
+    #
+    # @example interaction of and_yield and and_iterates
+    #   mock.should_receive(:each).and_yield(10).and_iterates(1, 2, 3).and_yield(20)
+    #   mock.enum_for(:each).to_a # => [10]
+    #   mock.enum_for(:each).to_a # => [1,2,3]
+    #   mock.enum_for(:each).to_a # => [20]
+    #
+    def and_iterates(*yield_values)
+      @yield_queue << yield_values
+    end
 
     # :call-seq:
     #   and_raise(an_exception)

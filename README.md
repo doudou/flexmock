@@ -572,6 +572,15 @@ determining whether a given expectation matches or not.
 
   Alias for `and_yield( ... )`.
 
+* <b>and_iterates(<em>value1</em>, <em>value2></em>, ...)</b>
+
+  Declares that the mocked method will receive a block, and the mock
+  will iterate over the values given, calling the block once for each
+  value. Not providing a block will be an error. Providing more than one
+  `and_iterates` or `and_yield` clause one a single expectation will mean
+  that subsquent mock method calls will yield the values provided by the
+  additional `and_iterates`/`and_yield` clause.
+
 * <b>pass_thru</b>
 * <b>pass_thru { |<em>value</em>| .... }</b>
 

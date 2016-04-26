@@ -162,6 +162,29 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_iteration_yields_values_in_sequence
+    FlexMock.use do |m|
+      m.should_receive(:msg).and_iterates(1, 2, 3)
+      yielded_values = []
+      m.msg { |a| yielded_values << a }
+      assert_equal [1, 2, 3], yielded_values
+    end
+  end
+
+  def test_iteration_and_yields_are_queued
+    FlexMock.use do |m|
+      m.should_receive(:msg).
+          and_yield(:one).
+          and_iterates(1, 2, 3).
+          and_yield(:two)
+      yielded_values = []
+      yielded_values << m.enum_for(:msg).to_a
+      yielded_values << m.enum_for(:msg).to_a
+      yielded_values << m.enum_for(:msg).to_a
+      assert_equal [[:one], [1, 2, 3], [:two]], yielded_values
+    end
+  end
+
   def test_failure_if_no_block_given
     FlexMock.use do |m|
       m.should_receive(:hi).and_yield(:one, :two).once
