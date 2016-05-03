@@ -916,7 +916,7 @@ MiniTest for asserting that mocked methods are actually called.
   Specify the number of times a matching method should have been
   invoked. `nil` (or omitted) means any number of times.
 
-* <b>with_block: <em>true/false/nil</em>
+* <b>with_block: <em>true/false/nil</em></b>
 
   Is a block required on the invocation? `true` means the method must
   be invoked with a block. `false` means the method must have been
@@ -972,7 +972,7 @@ spy behavior.
 
 *Modifiers for `have_received`*
 
-* <b>with(<em>args</em>)
+* <b>with(<em>args</em>)</b>
 
   If a `with` modifier is given, only messages with matching arguments
   are considered. _args_ can be any of the argument matches mentioned
