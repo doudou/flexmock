@@ -194,7 +194,8 @@ class FlexMock
             super(*args, &block)
           end
         end
-        @obj.prepend @initialize_override
+        override = @initialize_override
+        @obj.class_eval { prepend override }
       end
       if expectations_block
         @initialize_expectation_blocks    << expectations_block
