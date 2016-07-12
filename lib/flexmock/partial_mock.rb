@@ -68,6 +68,7 @@ class FlexMock
       @method_definitions = {}
       @methods_proxied = []
       @proxy_definition_module = nil
+      @initialize_override = nil
       unless safe_mode
         add_mock_method(:should_receive)
         MOCK_METHODS.each do |sym|
@@ -156,8 +157,14 @@ class FlexMock
       fail ArgumentError, "new_instances requires a Class to stub" unless
         Class === @obj
       location = caller
-      allocators = [:new] if allocators.empty?
+      allocators = [:initialize] if allocators.empty?
+
       expectation_recorder = ExpectationRecorder.new
+
+      if allocators.delete(:initialize)
+        initialize_stub(expectation_recorder, block)
+      end
+
       allocators.each do |allocate_method|
         flexmock_define_expectation(location, allocate_method).and_return { |*args|
           create_new_mocked_object(
@@ -165,6 +172,45 @@ class FlexMock
         }
       end
       expectation_recorder
+    end
+
+    # Stubs the #initialize method on a class
+    def initialize_stub(recorder, expectations_block)
+      if !@initialize_override
+        expectation_blocks    = @initialize_expectation_blocks = Array.new
+        expectation_recorders = @initialize_expectation_recorders = Array.new
+        @initialize_override = Module.new do
+          define_method :initialize do |*args, &block|
+            if self.class.respond_to?(:__flexmock_proxy) && (mock = self.class.__flexmock_proxy)
+              container = mock.flexmock_container
+              mock = container.flexmock(self)
+              expectation_blocks.each do |b|
+                b.call(mock)
+              end
+              expectation_recorders.each do |r|
+                r.apply(mock)
+              end
+            end
+            super(*args, &block)
+          end
+        end
+        @obj.prepend @initialize_override
+      end
+      if expectations_block
+        @initialize_expectation_blocks    << expectations_block
+      end
+      @initialize_expectation_recorders << recorder
+    end
+
+    def initialize_stub?
+      !!@initialize_override
+    end
+
+    def initialize_stub_remove
+      if initialize_stub?
+        @initialize_expectation_blocks.clear
+        @initialize_expectation_recorders.clear
+      end
     end
 
     # Create a new mocked object.
@@ -206,6 +252,7 @@ class FlexMock
     # Remove all traces of the mocking framework from the existing object.
     def flexmock_teardown
       if ! detached?
+        initialize_stub_remove
         proxy_module_eval do
           methods = instance_methods(false).to_a
           methods.each do |m|
@@ -268,7 +315,7 @@ class FlexMock
       if !@proxy_definition_module
         obj = @obj
         @proxy_definition_module = m = Module.new do
-          define_method(:__flexmock_proxy) do
+          define_method("__flexmock_proxy") do
             if box = obj.instance_variable_get(:@flexmock_proxy)
               box.proxy
             end

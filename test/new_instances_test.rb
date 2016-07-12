@@ -55,12 +55,38 @@ class TestNewInstances < Minitest::Test
     assert_equal :whimper,  m.bark
   end
 
+  def test_new_instances_is_transparent_after_flexmock_teardown
+    flexstub(Dog).new_instances.should_receive(:bark).never
+    flexmock_teardown
+    Dog.new
+  end
+
+  def test_new_instances_before_and_after_flexmock_teardown_are_disconnected
+    flexstub(Dog).new_instances.should_receive(:bark).never
+    flexmock_teardown
+    flexstub(Dog).new_instances.should_receive(:bark).once
+    obj = Dog.new.bark
+  end
+
   def test_new_instances_stubs_still_have_existing_methods
     flexstub(Dog).new_instances do |obj|
       obj.should_receive(:bark).and_return(:whimper)
     end
     m = Dog.new
     assert_equal :tail,  m.wag
+  end
+
+  def test_new_instances_mock_methods_called_in_initialize
+    klass = Class.new do
+      attr_reader :value
+      def initialize; @value = bark end
+      def bark; :original end
+    end
+    flexmock(klass).new_instances do |obj|
+      obj.should_receive(:bark).and_return(:mock)
+    end
+    obj = klass.new
+    assert_equal :mock, obj.value
   end
 
   def test_new_instances_will_pass_args_to_new
@@ -160,7 +186,7 @@ class TestNewInstances < Minitest::Test
     end
     block_run = false
     Connection.new do |c|
-      assert_equal :unstubbed, c.send("hi")
+      assert_equal :stubbed, c.send("hi")
       block_run = true
     end
     assert block_run
