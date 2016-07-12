@@ -22,6 +22,14 @@ Only significant changes (new APIs, deprecated APIs or backward-compatible
 changes) are documented here, a.k.a. minor or major version bumps. If you want a
 detailed changelog, go over the commit log in github (it's pretty low-traffic)
 
+2.2.0:
+
+ - #new_instances now mocks the #initialize method instead of mocking after the
+   allocation was done. This allows to do mock methods called by #initialize
+   itself. Behaviour when the allocator is explicitely provided is left
+   unchanged, which means that the old behaviour is still available by passing
+   :new to new_instances.
+
 2.1.0:
 
  - added `#and_iterates` to fix some shortcomings of `#and_yield` without
