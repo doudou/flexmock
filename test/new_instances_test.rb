@@ -65,7 +65,7 @@ class TestNewInstances < Minitest::Test
     flexstub(Dog).new_instances.should_receive(:bark).never
     flexmock_teardown
     flexstub(Dog).new_instances.should_receive(:bark).once
-    obj = Dog.new.bark
+    Dog.new.bark
   end
 
   def test_new_instances_stubs_still_have_existing_methods
