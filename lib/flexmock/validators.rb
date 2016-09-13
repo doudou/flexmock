@@ -9,6 +9,7 @@
 # above copyright notice is included.
 #+++
 
+require 'set'
 require 'flexmock/noop'
 require 'flexmock/spy_describers'
 
