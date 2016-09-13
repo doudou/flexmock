@@ -110,10 +110,15 @@ class FlexMock
 
     def flexmock_define_expectation(location, *args)
       EXP_BUILDER.parse_should_args(self, args) do |method_name|
-        unless @methods_proxied.include?(method_name)
+        if !@methods_proxied.include?(method_name)
           hide_existing_method(method_name)
         end
         ex = @mock.flexmock_define_expectation(location, method_name)
+        if FlexMock.partials_verify_signatures
+          if existing_method = @method_definitions[method_name]
+            ex.with_signature_matching(existing_method)
+          end
+        end
         ex.mock = self
         ex
       end
@@ -334,8 +339,9 @@ class FlexMock
     # not a singleton, all we need to do is override it with our own
     # singleton.
     def hide_existing_method(method_name)
-      stow_existing_definition(method_name)
+      existing_method = stow_existing_definition(method_name)
       define_proxy_method(method_name)
+      existing_method
     end
 
     # Stow the existing method definition so that it can be recovered
@@ -345,6 +351,7 @@ class FlexMock
         @method_definitions[method_name] = target_class_eval { instance_method(method_name) }
         @methods_proxied << method_name
       end
+      @method_definitions[method_name]
     rescue NameError
     end
 

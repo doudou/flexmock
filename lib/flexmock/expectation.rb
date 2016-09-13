@@ -38,6 +38,7 @@ class FlexMock
       @location = location
       @expected_args = nil
       @count_validators = []
+      @signature_validator = SignatureValidator.new(self)
       @count_validator_class = ExactCountValidator
       @actual_count = 0
       @return_value = nil
@@ -65,6 +66,9 @@ class FlexMock
       @count_validators.each do |validator|
         result << validator.describe
       end
+      if !@signature_validator.null?
+        result << @signature_validator.describe
+      end
       result
     end
 
@@ -79,11 +83,18 @@ class FlexMock
       FlexMock.framework_adapter.check(e.message) { false }
     end
 
+    def validate_signature(args)
+      @signature_validator.validate(args)
+    rescue SignatureValidator::ValidationFailed => e
+      FlexMock.framework_adapter.check(e.message) { false }
+    end
+
     # Verify the current call with the given arguments matches the
     # expectations recorded in this object.
     def verify_call(*args)
       validate_eligible
       validate_order
+      validate_signature(args)
       @actual_count += 1
       perform_yielding(args)
       return_value(args)
@@ -183,6 +194,28 @@ class FlexMock
     # arguments of any type.
     def with_any_args
       @expected_args = nil
+      self
+    end
+
+    # Validate general parameters on the call signature
+    def with_signature(
+        required_arguments: 0, optional_arguments: 0, splat: false,
+        required_keyword_arguments: [], optional_keyword_arguments: [], keyword_splat: false)
+      @signature_validator = SignatureValidator.new(
+          self,
+          required_arguments: required_arguments,
+          optional_arguments: optional_arguments,
+          splat: splat,
+          required_keyword_arguments: required_keyword_arguments,
+          optional_keyword_arguments: optional_keyword_arguments,
+          keyword_splat: keyword_splat)
+      self
+    end
+
+    # Validate that the passed arguments match the method signature from the
+    # given instance method
+    def with_signature_matching(instance_method)
+      @signature_validator = SignatureValidator.from_instance_method(self, instance_method)
       self
     end
 

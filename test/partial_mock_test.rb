@@ -549,4 +549,18 @@ class TestStubbing < Minitest::Test
     mock = flexmock(obj, :strict)
     assert_equal obj.singleton_class, mock.flexmock_get.flexmock_base_class
   end
+
+  def test_it_verifies_the_signature_against_the_original_method_if_partials_verify_signatures_is_set
+    FlexMock.partials_verify_signatures = true
+    k = Class.new do
+      def m(a); end
+    end
+    flexmock(obj = k.new).should_receive(:m)
+
+    assert_mock_failure(check_failed_error, deep: true, message: /expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+      obj.m
+    end
+  ensure
+    FlexMock.partials_verify_signatures = false
+  end
 end

@@ -1195,6 +1195,193 @@ class TestFlexMockShoulds < Minitest::Test
     assert_operator(:"`") { |m| m.`("command") } # `
   end
 
+  def test_with_signature_required_arguments
+    FlexMock.use do |mock|
+      mock.should_receive(:test).with_signature(required_arguments: 2)
+      assert_mock_failure(check_failed_error, message: /expects at least 2 positional arguments but got only 1/, line: __LINE__+1) do
+        mock.test(1)
+      end
+      mock.test(1, 2)
+      assert_mock_failure(check_failed_error, message: /expects at most 2 positional arguments but got 3/, line: __LINE__+1) do
+        mock.test(1, 2, 3)
+      end
+    end
+  end
+
+  def test_a_proc_argument_last_can_be_interpreted_as_positional_argument
+    FlexMock.use do |mock|
+      mock.should_receive(:test).with_signature(required_arguments: 2)
+      mock.test(1) { }
+      mock.test(1, 2) { }
+    end
+  end
+
+  def test_with_signature_optional_arguments
+    FlexMock.use do |mock|
+      mock.should_receive(:test).with_signature(required_arguments: 2, optional_arguments: 2)
+      assert_mock_failure(check_failed_error, message: /expects at least 2 positional arguments but got only 1/, line: __LINE__+1) do
+        mock.test(1)
+      end
+      mock.test(1, 2)
+      mock.test(1, 2, 3)
+      mock.test(1, 2, 3, 4)
+      assert_mock_failure(check_failed_error, message: /expects at most 4 positional arguments but got 5/, line: __LINE__+1) do
+        mock.test(1, 2, 3, 4, 5)
+      end
+    end
+  end
+
+  def test_it_interprets_a_hash_as_last_positional_argument_if_no_keyword_arguments_are_expected
+    FlexMock.use do |mock|
+      mock = flexmock
+      mock.should_receive(:test).with_signature(required_arguments: 2, optional_arguments: 2)
+      mock.test(1, 2, 3, test: 4)
+    end
+  end
+
+  def test_with_signature_splat_validates_required_arguments
+    FlexMock.use do |mock|
+      mock = flexmock
+      mock.should_receive(:test).with_signature(required_arguments: 2, optional_arguments: 2, splat: true)
+      assert_mock_failure(check_failed_error, message: /expects at least 2 positional arguments but got only 1/, line: __LINE__+1) do
+        mock.test(1)
+      end
+    end
+  end
+
+  def test_with_signature_splat_allows_an_arbitrary_number_of_extra_arguments
+    FlexMock.use do |mock|
+      mock = flexmock
+      mock.should_receive(:test).with_signature(required_arguments: 2, optional_arguments: 2, splat: true)
+      mock.test(1, 2)
+      mock.test(1, 2, 3)
+      mock.test(1, 2, 3, 4)
+    end
+  end
+
+  def test_with_signature_required_keyword_arguments
+    FlexMock.use do |mock|
+      mock = flexmock
+      mock.should_receive(:test).
+        with_signature(required_keyword_arguments: [:a, :b])
+      assert_mock_failure(check_failed_error, message: /missing required keyword arguments a/, line: __LINE__+1) do
+        mock.test(b: 10)
+      end
+      mock.test(a: 10, b: 20)
+      assert_mock_failure(check_failed_error, message: /given unexpected keyword argument c/, line: __LINE__+1) do
+        mock.test(a: 10, b: 10, c: 20)
+      end
+    end
+  end
+
+  def test_with_signature_optional_keyword_arguments
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+        with_signature(required_keyword_arguments: [:a, :b], optional_keyword_arguments: [:c, :d])
+      assert_mock_failure(check_failed_error, message: /missing required keyword arguments a/, line: __LINE__+1) do
+        mock.test(b: 10)
+      end
+      mock.test(a: 10, b: 20)
+      mock.test(a: 10, b: 20, c: 30)
+      mock.test(a: 10, b: 20, c: 30, d: 40)
+      assert_mock_failure(check_failed_error, message: /given unexpected keyword argument e/, line: __LINE__+1) do
+        mock.test(a: 10, b: 10, e: 42)
+      end
+    end
+  end
+
+  def test_with_signature_keyword_splat
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+        with_signature(
+          required_keyword_arguments: [:a, :b],
+          optional_keyword_arguments: [:c, :d],
+          keyword_splat: true)
+      assert_mock_failure(check_failed_error, message: /missing required keyword arguments a/, line: __LINE__+1) do
+        mock.test(b: 10)
+      end
+      mock.test(a: 10, b: 20)
+      mock.test(a: 10, b: 20, c: 30)
+      mock.test(a: 10, b: 20, c: 30, d: 40)
+      mock.test(a: 10, b: 10, e: 42)
+    end
+  end
+
+  def test_with_signature_raises_if_no_keywords_are_given
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+        with_signature(required_keyword_arguments: [:b], required_arguments: 1)
+      assert_mock_failure(check_failed_error, message: /expects keyword arguments but none were provided/, line: __LINE__+1) do
+        mock.test(10)
+      end
+    end
+  end
+
+  def test_with_signature_removes_the_keywords_from_the_position_arguments
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+        with_signature(required_keyword_arguments: [:b], required_arguments: 1)
+      mock.test(10, b: 10)
+    end
+
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+        with_signature(optional_keyword_arguments: [:b], required_arguments: 1)
+      mock.test(10, b: 10)
+    end
+
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+        with_signature(keyword_splat: true, required_arguments: 1)
+      mock.test(10, b: 10)
+    end
+  end
+
+  def test_with_signature_matching_sets_up_the_signature_predicate_based_on_the_provided_instance_method_positional_arguments
+    k = Class.new { def m(req_a, req_b, opt_c = 10); end }
+    FlexMock.use do |mock|
+      e = mock.should_receive(:test).with_signature_matching(k.instance_method(:m))
+      e = e.instance_variable_get(:@expectations).first
+      validator = e.instance_variable_get(:@signature_validator)
+      assert_equal 2, validator.required_arguments
+      assert_equal 1, validator.optional_arguments
+      refute validator.splat?
+      assert_equal Set.new, validator.required_keyword_arguments
+      assert_equal Set.new, validator.optional_keyword_arguments
+      assert_equal false, validator.keyword_splat?
+    end
+  end
+
+  def test_with_signature_matching_sets_up_the_signature_predicate_based_on_the_provided_instance_method_splat
+    k = Class.new { def m(req_a, req_b, opt_c = 10, *splat); end }
+    FlexMock.use do |mock|
+      e = mock.should_receive(:test).with_signature_matching(k.instance_method(:m))
+      e = e.instance_variable_get(:@expectations).first
+      validator = e.instance_variable_get(:@signature_validator)
+      assert_equal 2, validator.required_arguments
+      assert_equal 1, validator.optional_arguments
+      assert validator.splat?
+      assert_equal Set.new, validator.required_keyword_arguments
+      assert_equal Set.new, validator.optional_keyword_arguments
+      assert_equal false, validator.keyword_splat?
+    end
+  end
+
+  def test_with_signature_matching_sets_up_the_signature_predicate_based_on_the_provided_instance_method_keyword_arguments
+    k = Class.new { def m(req_a:, req_b:, opt_c: 10, **kw_splat); end }
+    FlexMock.use do |mock|
+      e = mock.should_receive(:test).with_signature_matching(k.instance_method(:m))
+      e = e.instance_variable_get(:@expectations).first
+      validator = e.instance_variable_get(:@signature_validator)
+      assert_equal 0, validator.required_arguments
+      assert_equal 0, validator.optional_arguments
+      refute validator.splat?
+      assert_equal Set[:req_a, :req_b], validator.required_keyword_arguments
+      assert_equal Set[:opt_c], validator.optional_keyword_arguments
+      assert_equal true, validator.keyword_splat?
+    end
+  end
+
   private
 
   def assert_operator(op, &block)

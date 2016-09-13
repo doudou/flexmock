@@ -49,8 +49,10 @@ class FlexMock
 
   class << self
     attr_accessor :partials_are_based
+    attr_accessor :partials_verify_signatures
   end
   self.partials_are_based = false
+  self.partials_verify_signatures = false
 
   # Create a FlexMock object with the given name.  The name is used in
   # error messages.  If no container is given, create a new, one-off
