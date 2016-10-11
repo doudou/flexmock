@@ -58,7 +58,8 @@ class FlexMock
       :should_receive, :new_instances,
       :should_receive_with_location,
       :flexmock_get,   :flexmock_teardown, :flexmock_verify,
-      :flexmock_received?, :flexmock_calls, :flexmock_find_expectation
+      :flexmock_received?, :flexmock_calls, :flexmock_find_expectation,
+      :invoke_original
     ]
 
     # Initialize a PartialMockProxy object.
@@ -106,6 +107,16 @@ class FlexMock
     # See Expectation for a list of declarators that can be used.
     def should_receive(*args)
       flexmock_define_expectation(caller, *args)
+    end
+
+    # Invoke the original of a mocked method
+    #
+    # Usually called in a #and_return statement
+    def invoke_original(m, *args, &block)
+      if block
+        args << block
+      end
+      flexmock_invoke_original(m, args)
     end
 
     def flexmock_define_expectation(location, *args)
