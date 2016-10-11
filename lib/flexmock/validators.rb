@@ -215,7 +215,14 @@ class FlexMock
     def validate(args)
       kw_args = Hash.new
       if expects_keyword_arguments?
-        if args.last.kind_of?(Hash)
+        last_is_kw_hash =
+            begin
+                args.last.kind_of?(Hash)
+            rescue NoMethodError
+                false
+            end
+
+        if last_is_kw_hash
           kw_args = args[-1]
           args = args[0..-2]
         elsif requires_keyword_arguments?

@@ -1317,6 +1317,15 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_with_signature_handles_getting_a_basicobject_as_last_object
+    FlexMock.use do |mock|
+      mock.should_receive(:test).
+          with_signature(optional_arguments: 1, required_keyword_arguments: [:b])
+      assert_mock_failure(check_failed_error, message: /expects keyword arguments but none were provided/, line: __LINE__+1) do
+        mock.test(BasicObject.new)
+      end
+    end
+  end
   def test_with_signature_removes_the_keywords_from_the_position_arguments
     FlexMock.use do |mock|
       mock.should_receive(:test).
