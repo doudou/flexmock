@@ -40,7 +40,9 @@ class FlexMock
       call_record.expectation = exp if call_record
       FlexMock.check(
         proc { "no matching handler found for " +
-               FlexMock.format_call(@sym, args) }
+               FlexMock.format_call(@sym, args) +
+               "\nDefined expectations:\n  " +
+               @expectations.map(&:description).join("\n  ") }
       ) { !exp.nil? }
       returned_value = exp.verify_call(*args)
       returned_value
