@@ -22,6 +22,13 @@ Only significant changes (new APIs, deprecated APIs or backward-compatible
 changes) are documented here, a.k.a. minor or major version bumps. If you want a
 detailed changelog, go over the commit log in github (it's pretty low-traffic)
 
+2.3.0:
+ - implemented validation of call arity for partial mocks. By setting
+     FlexMock.partials_verify_signatures = true
+   flexmock will verify on partials that the number of arguments, and the
+   keyword arguments passed to the mocked call match the existing method's
+   signature
+
 2.2.0:
 
  - #new_instances now mocks the #initialize method instead of mocking after the
