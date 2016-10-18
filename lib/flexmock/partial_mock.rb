@@ -88,16 +88,6 @@ class FlexMock
       proxy_box.proxy
     end
 
-    # Is there a mock proxy defined on the domain object?
-    def self.proxy_defined_on?(obj, container)
-      if !obj.instance_variable_defined?("@flexmock_proxy")
-        false
-      else
-        box = obj.instance_variable_get(:@flexmock_proxy)
-        box.current_container?(container)
-      end
-    end
-
     # The following methods are added to partial mocks so that they
     # can act like a mock.
 
