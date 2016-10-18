@@ -221,7 +221,7 @@ class FlexMock
       @expectations[method_name] ||= ExpectationDirector.new(method_name)
       result = Expectation.new(self, method_name, location)
       @expectations[method_name] << result
-      override_existing_method(method_name) if flexmock_respond_to?(method_name)
+      override_existing_method(method_name) if flexmock_respond_to?(method_name, true)
       result = ExplicitNeeded.new(result, method_name, @base_class) if
         @base_class && ! @base_class.flexmock_defined?(method_name)
       result
