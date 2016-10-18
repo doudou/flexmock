@@ -21,6 +21,14 @@ class TestFlexmockContainerMethods < Minitest::Test
     assert_equal :lo, mock.hi
   end
 
+  def test_mock_empty_name
+    mock = flexmock
+    error = assert_raises(ArgumentError) do
+      mock.should_receive('')
+    end
+    assert_equal "Empty list of names", error.message
+  end
+
   def test_mock_with_name
     mock = flexmock("Danny")
     mock.should_receive(:xxx).with(1)
