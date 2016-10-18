@@ -563,4 +563,59 @@ class TestStubbing < Minitest::Test
   ensure
     FlexMock.partials_verify_signatures = false
   end
+
+  def test_it_can_setup_mocks_recursively
+    obj = Object.new
+    FlexMock.use(obj) do
+      obj.should_receive(:foo).once
+      FlexMock.use(obj) do
+        obj.should_receive(:blah).once
+        obj.blah
+      end
+      obj.should_receive(:bar).once
+      obj.foo
+      obj.bar
+    end
+  end
+
+  def test_it_passes_calls_from_child_contexts_to_parent_contexts
+    obj = Object.new
+    FlexMock.use(obj) do
+      obj.should_receive(:foo).once
+      FlexMock.use(obj) do
+        obj.foo
+      end
+    end
+  end
+
+  def test_expectations_defined_in_sub_contexts_are_added_to_the_ones_in_parent_contexts
+    obj = Object.new
+    FlexMock.use(obj) do
+      obj.should_receive(:foo).with(10).once
+      FlexMock.use(obj) do
+        obj.should_receive(:foo).with(20).once
+        obj.foo(10)
+        obj.foo(20)
+      end
+    end
+  end
+
+  def test_it_calls_the_true_original_method_in_children_contexts
+    obj = Class.new do
+      attr_reader :value
+      def initialize; @value = 0 end
+      def call(value); @value += 1 end
+    end.new
+
+    FlexMock.use(obj) do
+      obj.should_receive(:call).with(1)
+      FlexMock.use(obj) do
+        obj.should_receive(:call).with(2).pass_thru
+        obj.call(2)
+      end
+      obj.call(1)
+    end
+    assert_equal 1, obj.value
+  end
 end
+

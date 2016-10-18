@@ -45,7 +45,7 @@ class FlexMock
   include Ordering
 
   attr_reader :flexmock_name
-  attr_accessor :flexmock_container
+  attr_reader :flexmock_container_stack
 
   class << self
     attr_accessor :partials_are_based
@@ -54,19 +54,48 @@ class FlexMock
   self.partials_are_based = false
   self.partials_verify_signatures = false
 
+  # Null object for {#parent_mock}
+  class NullParentMock
+    def flexmock_expectations_for(sym)
+    end
+  end
+
   # Create a FlexMock object with the given name.  The name is used in
   # error messages.  If no container is given, create a new, one-off
   # container for this mock.
-  def initialize(name="unknown", container=nil)
+  def initialize(name="unknown", container=nil, parent: nil)
     @flexmock_name = name
     @flexmock_closed = false
+    @flexmock_container_stack = Array.new
     @expectations = Hash.new
-    @ignore_missing = false
     @verified = false
     @calls = []
     @base_class = nil
+    if parent
+      @ignore_missing = parent.ignore_missing?
+      @parent_mock = parent
+    else
+      @ignore_missing = false
+      @parent_mock = NullParentMock.new
+    end
     container = UseContainer.new if container.nil?
     container.flexmock_remember(self)
+  end
+
+  def ignore_missing?
+    @ignore_missing
+  end
+
+  def flexmock_container
+    flexmock_container_stack.last
+  end
+
+  def push_flexmock_container(container)
+    flexmock_container_stack.push(container)
+  end
+
+  def pop_flexmock_container
+    flexmock_container_stack.pop
   end
 
   # Return the inspection string for a mock.
@@ -117,8 +146,8 @@ class FlexMock
     flexmock_wrap do
       if flexmock_closed?
         FlexMock.undefined
-      elsif handler = @expectations[sym]
-        handler.call(enhanced_args, call_record)
+      elsif exp = flexmock_expectations_for(sym)
+        exp.call(enhanced_args, call_record)
       elsif @base_class && @base_class.flexmock_defined?(sym)
         FlexMock.undefined
       elsif @ignore_missing
@@ -139,13 +168,14 @@ class FlexMock
 
   # Find the mock expectation for method sym and arguments.
   def flexmock_find_expectation(method_name, *args) # :nodoc:
-    exp = @expectations[method_name]
-    exp ? exp.find_expectation(*args) : nil
+    if exp = flexmock_expectations_for(method_name)
+      exp.find_expectation(*args)
+    end
   end
 
   # Return the expectation director for a method name.
   def flexmock_expectations_for(method_name) # :nodoc:
-    @expectations[method_name]
+    @expectations[method_name] || @parent_mock.flexmock_expectations_for(method_name)
   end
 
   def flexmock_base_class
@@ -183,9 +213,9 @@ class FlexMock
 
   # Override the built-in +method+ to include the mocked methods.
   def method(method_name)
-    @expectations[method_name] || super
+    flexmock_expectations_for(method_name) || super
   rescue NameError => ex
-    if @ignore_missing
+    if ignore_missing?
       proc { FlexMock.undefined }
     else
       raise ex
@@ -218,9 +248,10 @@ class FlexMock
   # Using +location+, define the expectations specified by +args+.
   def flexmock_define_expectation(location, *args)
     @last_expectation = EXP_BUILDER.parse_should_args(self, args) do |method_name|
-      @expectations[method_name] ||= ExpectationDirector.new(method_name)
+      exp = flexmock_expectations_for(method_name) || ExpectationDirector.new(method_name)
+      @expectations[method_name] = exp
       result = Expectation.new(self, method_name, location)
-      @expectations[method_name] << result
+      exp << result
       override_existing_method(method_name) if flexmock_respond_to?(method_name, true)
       result = ExplicitNeeded.new(result, method_name, @base_class) if
         @base_class && ! @base_class.flexmock_defined?(method_name)
