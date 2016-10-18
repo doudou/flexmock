@@ -55,7 +55,7 @@ class FlexMock
       elsif names.size > 1
         create_demeter_chain(mock, names)
       else
-        fail "Empty list of names"
+        fail ArgumentError, "Empty list of names"
       end
     end
 

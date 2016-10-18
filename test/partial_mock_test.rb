@@ -92,6 +92,23 @@ class TestStubbing < Minitest::Test
     assert_equal :woof, dog.bark
   end
 
+  def test_invoke_original_allows_to_call_the_original_directly
+    dog = Dog.new
+    flexmock(dog).should_receive(:bark).never
+    assert_equal :woof, dog.invoke_original(:bark)
+  end
+
+  def test_invoke_original_can_pass_a_block
+    dog = Class.new do
+      def bark(&block)
+        block.call
+      end
+    end.new
+    recorder = flexmock.should_receive(:called).once.mock
+    flexmock(dog).should_receive(:bark).never
+    dog.invoke_original(:bark) { recorder.called }
+  end
+
   def test_stubbed_methods_can_invoke_original_behavior_with_modification
     dog = Dog.new
     flexmock(dog).should_receive(:bark).pass_thru { |result| result.to_s.upcase }.once
@@ -510,6 +527,30 @@ class TestStubbing < Minitest::Test
     assert(/pass_thru/ === exception.message, "expected #{exception.message} to mention the flexmock pass_thru clause")
   end
 
+  def test_partial_mocks_leaves_exceptions_raised_by_the_original_method_unchanged
+    error_m = Class.new(RuntimeError)
+    obj = Class.new do
+      define_method(:mocked_method) { raise error_m, "the error message" }
+    end.new
+    flexmock(obj).should_receive(:mocked_method).pass_thru
+    exception = assert_raises(error_m) do
+        obj.mocked_method
+    end
+    assert_equal "the error message", exception.message
+  end
+
+  def test_partial_mocks_leaves_NoMethodError_exceptions_raised_by_the_original_method_unchanged
+    error_m = Class.new(RuntimeError)
+    obj = Class.new do
+      define_method(:mocked_method) { does_not_exist() }
+    end.new
+    flexmock(obj).should_receive(:mocked_method).pass_thru
+    exception = assert_raises(NameError) do
+        obj.mocked_method
+    end
+    assert_equal "undefined method `does_not_exist' for #{obj}", exception.message
+  end
+
   def test_it_checks_whether_mocks_are_forbidden_before_forwarding_the_call
       obj = Class.new
       flexmock(obj).should_receive(:mocked).never
@@ -539,6 +580,13 @@ class TestStubbing < Minitest::Test
       assert_raises(FlexMock::CheckFailedError) do
         obj.inspect
       end
+  end
+
+  def test_the_strict_keyword_raises_if_used_on_a_non_partial_mock
+    error = assert_raises(ArgumentError) do
+      flexmock('name', :strict)
+    end
+    assert_equal "cannot use :strict outside a partial mock", error.message
   end
 
   def test_the_strict_keyword_sets_the_base_class_to_the_partial_mock_singleton_class

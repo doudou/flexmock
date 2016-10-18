@@ -1376,6 +1376,14 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_signature_validator_from_instance_method_raises_if_the_method_description_contains_an_unknown_argument_type
+    mock = flexmock(parameters: [[:unknown]])
+    error = assert_raises(ArgumentError) do
+      FlexMock::SignatureValidator.from_instance_method(flexmock, mock)
+    end
+    assert_equal "cannot interpret parameter type unknown", error.message
+  end
+
   def test_private_Object_methods_can_be_mocked
     FlexMock.use do |m|
       m.should_receive(:warn).returns(1)

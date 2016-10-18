@@ -77,4 +77,22 @@ class ExpectationDescriptionTest < Minitest::Test
     @exp.at_least.once.at_most.times(10)
     assert_equal "should_receive(:foo).at_least.once.at_most.times(10)", @exp.description
   end
+
+  def test_with_signature
+    @exp.at_least.once.with_signature(required_arguments: 2, optional_arguments: 3,
+                        required_keyword_arguments: [:test],
+                        optional_keyword_arguments: [:other_test], splat: true,
+                        keyword_splat: false)
+
+    description = <<-EOD
+should_receive(:foo).at_least.once.with_signature(
+          required_arguments: 2,
+          optional_arguments: 3,
+          required_keyword_arguments: [:test],
+          optional_keyword_arguments: [:other_test],
+          splat: true,
+          keyword_splat: false)
+          EOD
+    assert_equal description.chomp, @exp.description
+  end
 end
