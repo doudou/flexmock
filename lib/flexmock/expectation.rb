@@ -143,11 +143,6 @@ class FlexMock
       @count_validators.all? { |v| v.eligible?(@actual_count) }
     end
 
-    # Is this expectation constrained by any call counts?
-    def call_count_constrained?
-      ! @count_validators.empty?
-    end
-
     # Validate that the order
     def validate_order
       if @order_number
