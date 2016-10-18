@@ -28,27 +28,74 @@ class FlexMock
 
     attr_reader :mock
 
-    ProxyBox = Struct.new :proxy
+    # Boxing of the flexmock proxy
+    #
+    # It is managed as a stack in order to allow to setup containers recursively
+    # (as e.g. FlexMock.use( ... ) checks)
+    class ProxyBox
+      attr_reader :stack
+
+      Element = Struct.new :proxy, :container
+
+      def initialize
+        @stack = [Element.new]
+      end
+
+      # Tests whether the given container is the one on which the current proxy
+      # acts
+      def container
+        stack.last.container
+      end
+
+      def proxy
+        stack.last.proxy
+      end
+
+      def push(proxy, container)
+        stack.push(Element.new(proxy, container))
+      end
+
+      def pop
+        if !stack.empty?
+          stack.pop
+        end
+      end
+
+      def empty?
+        stack.size == 1
+      end
+    end
 
     # Make a partial mock proxy and install it on the target +obj+.
     def self.make_proxy_for(obj, container, name, safe_mode)
       name ||= "flexmock(#{obj.class.to_s})"
-      if ! proxy_defined_on?(obj)
-        mock = FlexMock.new(name, container)
-        proxy = PartialMockProxy.new(obj, mock, safe_mode)
-        if obj.instance_variable_defined?("@flexmock_proxy")
-          obj.instance_variable_get("@flexmock_proxy").proxy = proxy
-        else
-          obj.instance_variable_set("@flexmock_proxy", ProxyBox.new(proxy))
-        end
+      if !obj.instance_variable_defined?("@flexmock_proxy")
+        proxy_box = obj.instance_variable_set("@flexmock_proxy", ProxyBox.new)
+      else
+        proxy_box = obj.instance_variable_get("@flexmock_proxy")
       end
-      obj.instance_variable_get("@flexmock_proxy").proxy
+
+      if proxy_box.container != container
+        if !proxy_box.empty?
+          parent_proxy, _ = proxy_box.proxy
+          parent_mock = parent_proxy.mock
+        end
+
+        mock  = FlexMock.new(name, container, parent: parent_mock)
+        proxy = PartialMockProxy.new(obj, mock, safe_mode, parent: parent_proxy)
+        proxy_box.push(proxy, container)
+      end
+      proxy_box.proxy
     end
 
     # Is there a mock proxy defined on the domain object?
-    def self.proxy_defined_on?(obj)
-      obj.instance_variable_defined?("@flexmock_proxy") &&
-        obj.instance_variable_get("@flexmock_proxy").proxy
+    def self.proxy_defined_on?(obj, container)
+      if !obj.instance_variable_defined?("@flexmock_proxy")
+        false
+      else
+        box = obj.instance_variable_get(:@flexmock_proxy)
+        box.current_container?(container)
+      end
     end
 
     # The following methods are added to partial mocks so that they
@@ -62,14 +109,21 @@ class FlexMock
       :invoke_original
     ]
 
+    attr_reader :method_definitions
+
     # Initialize a PartialMockProxy object.
-    def initialize(obj, mock, safe_mode)
+    def initialize(obj, mock, safe_mode, parent: nil)
       @obj = obj
       @mock = mock
-      @method_definitions = {}
-      @methods_proxied = []
       @proxy_definition_module = nil
       @initialize_override = nil
+
+      if parent
+        @method_definitions = parent.method_definitions.dup
+      else
+        @method_definitions = {}
+      end
+
       unless safe_mode
         add_mock_method(:should_receive)
         MOCK_METHODS.each do |sym|
@@ -83,6 +137,14 @@ class FlexMock
     # Get the mock object for the partial mock.
     def flexmock_get
       @mock
+    end
+
+    def push_flexmock_container(container)
+      @mock.push_flexmock_container(container)
+    end
+
+    def pop_flexmock_container
+      @mock.pop_flexmock_container
     end
 
     # :call-seq:
@@ -121,7 +183,7 @@ class FlexMock
 
     def flexmock_define_expectation(location, *args)
       EXP_BUILDER.parse_should_args(self, args) do |method_name|
-        if !@methods_proxied.include?(method_name)
+        if !@method_definitions.has_key?(method_name)
           hide_existing_method(method_name)
         end
         ex = @mock.flexmock_define_expectation(location, method_name)
@@ -278,7 +340,7 @@ class FlexMock
         end
         if @obj.instance_variable_defined?(:@flexmock_proxy) &&
             (box = @obj.instance_variable_get(:@flexmock_proxy))
-          box.proxy = nil
+          box.pop
         end
         @obj = nil
       end
@@ -358,9 +420,8 @@ class FlexMock
     # Stow the existing method definition so that it can be recovered
     # later.
     def stow_existing_definition(method_name)
-      if !@methods_proxied.include?(method_name)
+      if !@method_definitions.has_key?(method_name)
         @method_definitions[method_name] = target_class_eval { instance_method(method_name) }
-        @methods_proxied << method_name
       end
       @method_definitions[method_name]
     rescue NameError
@@ -390,6 +451,5 @@ class FlexMock
     def detached?
       @obj.nil?
     end
-
   end
 end

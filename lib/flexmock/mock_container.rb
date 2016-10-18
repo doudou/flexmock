@@ -52,6 +52,7 @@ class FlexMock
     def flexmock_close
       flexmock_created_mocks.each do |m|
         m.flexmock_teardown
+        m.pop_flexmock_container
       end
       @flexmock_created_mocks = []
     end
@@ -127,7 +128,7 @@ class FlexMock
     def flexmock_remember(mocking_object)
       @flexmock_created_mocks ||= []
       @flexmock_created_mocks << mocking_object
-      mocking_object.flexmock_container = self
+      mocking_object.push_flexmock_container(self)
       mocking_object
     end
 
