@@ -234,7 +234,12 @@ class FlexMock
       # proc as last argument" ... give some leeway in this case
 
       if required_arguments > args.size
-        raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{args.size}"
+        if requires_keyword_arguments? || !last_is_kw_hash || (required_arguments - args.size) > 1
+          raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{args.size}"
+        else
+          args << kw_args
+          kw_args = Hash.new
+        end
       elsif !splat? && (required_arguments + optional_arguments) < args.size
         if !args.last.kind_of?(Proc) || (required_arguments + optional_arguments) < args.size - 1
           raise ValidationFailed, "#{@exp} expects at most #{required_arguments + optional_arguments} positional arguments but got #{args.size}"

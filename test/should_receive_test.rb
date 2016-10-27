@@ -1346,6 +1346,27 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_signature_validator_understands_that_a_hash_can_be_used_for_both_keywords_and_positional_arguments
+      FlexMock.use do |mock|
+        mock.should_receive(:m).
+          with_signature(optional_keyword_arguments: [:b], required_arguments: 1)
+        mock.m(Hash.new)
+      end
+  end
+
+  def test_signature_validator_does_not_accept_a_lone_hash_as_positional_argument_if_there_are_required_keyword_arguments
+      FlexMock.use do |mock|
+        mock.should_receive(:m).
+          with_signature(required_keyword_arguments: [:b], required_arguments: 1)
+        assert_mock_failure(check_failed_error, message: /in mock 'unknown': m\(\*args\) expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+          mock.m(Hash.new)
+        end
+        assert_mock_failure(check_failed_error, message: /in mock 'unknown': m\(\*args\) expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+          mock.m(b: 10)
+        end
+      end
+  end
+
   def test_with_signature_matching_sets_up_the_signature_predicate_based_on_the_provided_instance_method_positional_arguments
     k = Class.new { def m(req_a, req_b, opt_c = 10); end }
     FlexMock.use do |mock|
