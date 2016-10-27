@@ -171,9 +171,20 @@ class FlexMock
       flexmock_invoke_original(m, args)
     end
 
+    # Whether the given method's original definition has been stored
+    def has_original_method?(m)
+      @method_definitions.has_key?(m)
+    end
+
+    # Whether the given method is already being proxied
+    def has_proxied_method?(m)
+      @proxy_definition_module &&
+          @proxy_definition_module.method_defined?(m)
+    end
+
     def flexmock_define_expectation(location, *args)
       EXP_BUILDER.parse_should_args(self, args) do |method_name|
-        if !@method_definitions.has_key?(method_name)
+        if !has_proxied_method?(method_name) && !has_original_method?(method_name)
           hide_existing_method(method_name)
         end
         ex = @mock.flexmock_define_expectation(location, method_name)

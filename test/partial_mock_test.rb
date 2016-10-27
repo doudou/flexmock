@@ -450,6 +450,24 @@ class TestStubbing < Minitest::Test
     end
   end
 
+  def test_partial_mocks_do_not_stow_their_own_method_definitions
+    dog = Dog.new
+    flexmock(dog)
+    dog.should_receive(:meow).explicitly.and_return(:something)
+    dog.should_receive(:meow).explicitly.and_return(:something_else)
+    refute dog.__flexmock_proxy.has_original_method?(:meow)
+  end
+
+  def test_partial_mocks_allow_explicitely_stubbing_methods_in_sequence_when_signature_verification_is_on
+    dog = Dog.new
+    flexmock(dog, :on, Dog)
+    FlexMock.partials_verify_signatures = true
+    dog.should_receive(:meow).explicitly.and_return(:something)
+    dog.should_receive(:meow).explicitly.and_return(:something_else)
+  ensure
+    FlexMock.partials_verify_signatures = false
+  end
+
   # The following test was suggested by Pat Maddox for the RSpec
   # mocks.  Evidently the (poorly implemented) == method caused issues
   # with RSpec Mock's internals.  I'm just double checking for any
