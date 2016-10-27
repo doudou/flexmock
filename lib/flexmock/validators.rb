@@ -213,18 +213,28 @@ class FlexMock
     # @param [Array] args
     # @raise ValidationFailed
     def validate(args)
+      args = args.dup
       kw_args = Hash.new
+
+      last_is_proc = false
+      begin
+        if args.last.kind_of?(Proc)
+          args.pop
+          last_is_proc = true
+        end
+      rescue NoMethodError
+      end
+
+      last_is_kw_hash = false
       if expects_keyword_arguments?
         last_is_kw_hash =
-            begin
-                args.last.kind_of?(Hash)
-            rescue NoMethodError
-                false
-            end
+          begin
+            args.last.kind_of?(Hash)
+          rescue NoMethodError
+          end
 
         if last_is_kw_hash
-          kw_args = args[-1]
-          args = args[0..-2]
+          kw_args = args.pop
         elsif requires_keyword_arguments?
           raise ValidationFailed, "#{@exp} expects keyword arguments but none were provided"
         end
@@ -232,17 +242,34 @@ class FlexMock
 
       # There is currently no way to disambiguate "given a block" from "given a
       # proc as last argument" ... give some leeway in this case
+      positional_count = args.size
 
-      if required_arguments > args.size
-        if requires_keyword_arguments? || !last_is_kw_hash || (required_arguments - args.size) > 1
-          raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{args.size}"
-        else
-          args << kw_args
-          kw_args = Hash.new
+      if required_arguments > positional_count
+        if requires_keyword_arguments?
+          raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{positional_count}"
         end
-      elsif !splat? && (required_arguments + optional_arguments) < args.size
-        if !args.last.kind_of?(Proc) || (required_arguments + optional_arguments) < args.size - 1
-          raise ValidationFailed, "#{@exp} expects at most #{required_arguments + optional_arguments} positional arguments but got #{args.size}"
+
+        if (required_arguments - positional_count) == 1 && (last_is_kw_hash || last_is_proc)
+          if last_is_kw_hash
+            last_is_kw_hash = false
+            kw_args = Hash.new
+          else
+            last_is_proc = false
+          end
+          positional_count += 1
+        elsif (required_arguments - positional_count) == 2 && (last_is_kw_hash && last_is_proc)
+          last_is_kw_hash = false
+          kw_args = Hash.new
+          last_is_proc = false
+          positional_count += 2
+        else
+          raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{positional_count}"
+        end
+      end
+
+      if !splat? && (required_arguments + optional_arguments) < positional_count
+        if !last_is_proc || (required_arguments + optional_arguments) < positional_count - 1
+          raise ValidationFailed, "#{@exp} expects at most #{required_arguments + optional_arguments} positional arguments but got #{positional_count}"
         end
       end
 

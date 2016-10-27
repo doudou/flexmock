@@ -1354,6 +1354,42 @@ class TestFlexMockShoulds < Minitest::Test
       end
   end
 
+  def test_signature_validator_understands_that_a_proc_last_can_both_be_a_positional_parameter_and_a_block
+      FlexMock.use do |mock|
+        mock.should_receive(:m).with_signature(required_arguments: 1)
+        mock.m(proc { })
+      end
+
+      FlexMock.use do |mock|
+        mock.should_receive(:m).with_signature(required_arguments: 0)
+        mock.m { }
+      end
+  end
+
+  def test_signature_validator_interprets_keyword_arguments_even_if_a_block_is_provided
+      FlexMock.use do |mock|
+        mock.should_receive(:m).with_signature(required_arguments: 1, optional_keyword_arguments: [:b])
+        mock.m(10, b: 10) { }
+      end
+  end
+
+  def test_signature_validator_does_not_interpret_a_proc_as_positional_argument_if_keyword_arguments_are_expected
+      FlexMock.use do |mock|
+        mock.should_receive(:m).with_signature(required_arguments: 1, required_keyword_arguments: [:b])
+        mock.m(10, b: 10) { }
+        assert_mock_failure(check_failed_error, message: /in mock 'unknown': m\(\*args\) expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+          mock.m(b: 10) { }
+        end
+      end
+  end
+
+  def test_signature_validator_does_accept_both_a_hash_and_a_proc_as_positional_arguments
+      FlexMock.use do |mock|
+        mock.should_receive(:m).with_signature(required_arguments: 3)
+        mock.m(10, Hash[b: 10], proc {})
+      end
+  end
+
   def test_signature_validator_does_not_accept_a_lone_hash_as_positional_argument_if_there_are_required_keyword_arguments
       FlexMock.use do |mock|
         mock.should_receive(:m).
