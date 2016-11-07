@@ -51,7 +51,7 @@ class FlexMock
         @assertions = 0
     end
 
-    def make_assertion(msg, &block)
+    def make_assertion(msg, backtrace = caller, &block)
       unless yield
         msg = msg.call if msg.is_a?(Proc)
         assert(false, msg)
