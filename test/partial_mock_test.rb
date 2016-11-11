@@ -558,7 +558,6 @@ class TestStubbing < Minitest::Test
   end
 
   def test_partial_mocks_leaves_NoMethodError_exceptions_raised_by_the_original_method_unchanged
-    error_m = Class.new(RuntimeError)
     obj = Class.new do
       define_method(:mocked_method) { does_not_exist() }
     end.new
