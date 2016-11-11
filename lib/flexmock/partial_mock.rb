@@ -92,7 +92,7 @@ class FlexMock
     # can act like a mock.
 
     MOCK_METHODS = [
-      :should_receive, :new_instances,
+      :should_receive, :new_instances, :should_expect,
       :should_receive_with_location,
       :flexmock_get,   :flexmock_teardown, :flexmock_verify,
       :flexmock_received?, :flexmock_calls, :flexmock_find_expectation,
@@ -159,6 +159,10 @@ class FlexMock
     # See Expectation for a list of declarators that can be used.
     def should_receive(*args)
       flexmock_define_expectation(caller, *args)
+    end
+
+    def should_expect(*args)
+      yield Recorder.new(self)
     end
 
     # Invoke the original of a mocked method

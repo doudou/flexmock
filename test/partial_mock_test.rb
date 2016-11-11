@@ -683,5 +683,12 @@ class TestStubbing < Minitest::Test
     end
     assert_equal 1, obj.value
   end
+
+  def test_should_expect
+    flexmock(obj = Dog.new).should_expect do |e|
+      e.bark
+    end
+    obj.bark
+  end
 end
 
