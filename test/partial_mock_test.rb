@@ -450,6 +450,63 @@ class TestStubbing < Minitest::Test
     end
   end
 
+  def test_partial_mocks_properly_detect_methods_defined_through_a_class_hierarchy
+    dog = Class.new do
+      class << self
+        def bark
+        end
+      end
+    end
+    chiwawa = Class.new(dog)
+
+    FlexMock.partials_are_based = true
+    flexmock(chiwawa)
+    chiwawa.should_receive(:bark).and_return(:grrr)
+    assert_equal :grrr, chiwawa.bark
+  ensure
+    FlexMock.partials_are_based = false
+  end
+
+  if FlexMock::ON_RUBY_20
+    # This is a limitation due to 2.0's broken #ancestors on singletons of classes
+    def test_partial_mocks_will_not_require_explicitly_on_a_class_singleton_method_that_has_been_mocked_on_the_parent_class
+      dog = Class.new
+      chiwawa = Class.new(dog)
+
+      FlexMock.partials_are_based = true
+      flexmock(dog).should_receive(:bark).explicitly
+      flexmock(chiwawa)
+      chiwawa.should_receive(:bark).and_return(:grrr)
+      assert_equal :grrr, chiwawa.bark
+    ensure
+      FlexMock.partials_are_based = false
+    end
+  else
+    def test_based_partial_mocks_require_explicitly_on_a_non_existing_method_of_a_class_singleton
+      dog = Class.new
+      FlexMock.partials_are_based = true
+      assert_raises(NoMethodError, /bark.*explicitly/) do
+        flexmock(dog).should_receive(:bark).and_return(:grrr)
+      end
+    ensure
+      FlexMock.partials_are_based = false
+    end
+
+    def test_partial_mocks_require_explicitly_on_a_class_singleton_method_that_has_been_mocked_on_the_parent_class
+      dog = Class.new
+      chiwawa = Class.new(dog)
+
+      FlexMock.partials_are_based = true
+      flexmock(dog).should_receive(:bark).explicitly
+      flexmock(chiwawa)
+      assert_raises(NoMethodError, /bark.*explicitly/) do
+        chiwawa.should_receive(:bark).and_return(:grrr)
+      end
+    ensure
+      FlexMock.partials_are_based = false
+    end
+  end
+
   def test_partial_mocks_do_not_stow_their_own_method_definitions
     dog = Dog.new
     flexmock(dog)

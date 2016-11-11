@@ -245,6 +245,8 @@ class FlexMock
     flexmock_define_expectation(caller, *args)
   end
 
+  ON_RUBY_20 = (RUBY_VERSION =~ /^2\.0\./)
+
   # Using +location+, define the expectations specified by +args+.
   def flexmock_define_expectation(location, *args)
     @last_expectation = EXP_BUILDER.parse_should_args(self, args) do |method_name|
@@ -253,8 +255,12 @@ class FlexMock
       result = Expectation.new(self, method_name, location)
       exp << result
       override_existing_method(method_name) if flexmock_respond_to?(method_name, true)
-      result = ExplicitNeeded.new(result, method_name, @base_class) if
-        @base_class && ! @base_class.flexmock_defined?(method_name)
+
+      if @base_class && !@base_class.flexmock_defined?(method_name)
+        if !ON_RUBY_20 || !@base_class.ancestors.include?(Class)
+          result = ExplicitNeeded.new(result, method_name, @base_class) 
+        end
+      end
       result
     end
   end
