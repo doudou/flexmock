@@ -504,11 +504,11 @@ class TestFlexMockShoulds < Minitest::Test
 
   def test_arg_matching_with_class
     FlexMock.use do |m|
-      m.should_receive(:hi).with(Fixnum).returns(10)
+      m.should_receive(:hi).with(0.class).returns(10)
       m.should_receive(:hi).with(Object).returns(20)
 
       assert_equal 10, m.hi(319)
-      assert_equal 10, m.hi(Fixnum)
+      assert_equal 10, m.hi(0.class)
       assert_equal 20, m.hi("hi")
     end
   end
