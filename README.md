@@ -945,7 +945,7 @@ MiniTest for asserting that mocked methods are actually called.
   additional validations on supplied arguments. Default is no
   additional validations.
 
-* <b>on: <em>n</em>
+* <b>on: <em>n</em></b>
 
   Only apply the additional validations on the <em>n</em>'th
   invocation of the matching method. Default is apply additional
