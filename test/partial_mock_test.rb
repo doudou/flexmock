@@ -139,7 +139,7 @@ class TestStubbing < Minitest::Test
     assert_equal :growl, dog.bark
     partial_mock.flexmock_teardown
     assert_equal :woof, dog.bark
-    assert_equal nil, dog.instance_variable_get("@flexmock_proxy").proxy
+    assert_nil dog.instance_variable_get("@flexmock_proxy").proxy
   end
 
   def test_original_missing_behavior_can_be_restored
