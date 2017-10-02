@@ -746,5 +746,16 @@ class TestStubbing < Minitest::Test
     end
     obj.bark
   end
+
+  def test_interaction_between_signature_verification_and_based_partials
+    FlexMock.partials_are_based = true
+    FlexMock.partials_verify_signatures = true
+    obj = flexmock(obj = Dog.new)
+    obj.should_receive(:puts).explicitly.once
+    obj.puts "test"
+  ensure
+    FlexMock.partials_are_based = false
+    FlexMock.partials_verify_signatures = false
+  end
 end
 
