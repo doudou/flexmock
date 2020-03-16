@@ -92,6 +92,18 @@ class TestStubbing < Minitest::Test
     assert_equal :woof, dog.bark
   end
 
+  def test_stubbed_methods_handle_singleton_methods_added_after_the_mock_was_created
+    dog = Dog.new
+    m = Module.new do
+      def bark
+        :baaaaaark
+      end
+    end
+    flexmock(dog).should_receive(:bark).pass_thru.once
+    dog.extend m
+    assert_equal :baaaaaark, dog.bark
+  end
+
   def test_invoke_original_allows_to_call_the_original_directly
     dog = Dog.new
     flexmock(dog).should_receive(:bark).never

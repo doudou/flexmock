@@ -99,20 +99,13 @@ class FlexMock
       :invoke_original
     ]
 
-    attr_reader :method_definitions
-
     # Initialize a PartialMockProxy object.
     def initialize(obj, mock, safe_mode, parent: nil)
       @obj = obj
       @mock = mock
       @proxy_definition_module = nil
+      @parent = parent
       @initialize_override = nil
-
-      if parent
-        @method_definitions = parent.method_definitions.dup
-      else
-        @method_definitions = {}
-      end
 
       unless safe_mode
         add_mock_method(:should_receive)
@@ -176,8 +169,32 @@ class FlexMock
     end
 
     # Whether the given method's original definition has been stored
+    def find_original_method(m)
+      it = @obj.method(m)
+      while it && (it.owner != @proxy_definition_module)
+        it = it.super_method
+      end
+
+      return unless it
+      while it && it.owner.kind_of?(ProxyDefinitionModule)
+        it = it.super_method
+      end
+      it
+    rescue NameError => e
+      raise unless e.name == m
+    end
+
+    # Whether the given method's original definition has been stored
+    def original_method(m)
+      unless (m = find_original_method(m))
+        raise ArgumentError, "no original method for #{m}"
+      end
+      m
+    end
+
+    # Whether the given method's original definition has been stored
     def has_original_method?(m)
-      @method_definitions.has_key?(m)
+      find_original_method(m)
     end
 
     # Whether the given method is already being proxied
@@ -188,12 +205,12 @@ class FlexMock
 
     def flexmock_define_expectation(location, *args)
       EXP_BUILDER.parse_should_args(self, args) do |method_name|
-        if !has_proxied_method?(method_name) && !has_original_method?(method_name)
-          hide_existing_method(method_name)
+        if !has_proxied_method?(method_name)
+          define_proxy_method(method_name)
         end
         ex = @mock.flexmock_define_expectation(location, method_name)
         if FlexMock.partials_verify_signatures
-          if existing_method = @method_definitions[method_name]
+          if (existing_method = find_original_method(method_name))
             ex.with_signature_matching(existing_method)
           end
         end
@@ -207,7 +224,6 @@ class FlexMock
     end
 
     def add_mock_method(method_name)
-      stow_existing_definition(method_name)
       proxy_module_eval do
         define_method(method_name) { |*args, &block|
           proxy = __flexmock_proxy or
@@ -316,12 +332,12 @@ class FlexMock
     # Invoke the original definition of method on the object supported by
     # the stub.
     def flexmock_invoke_original(method, args)
-      if original_method = @method_definitions[method]
+      if (original_method = find_original_method(method))
         if Proc === args.last
           block = args.last
           args = args[0..-2]
         end
-        original_method.bind(@obj).call(*args, &block)
+        original_method.call(*args, &block)
       else
         @obj.__send__(:method_missing, method, *args, &block)
       end
@@ -394,11 +410,14 @@ class FlexMock
       target_singleton_class.class_eval(*args, &block)
     end
 
+    class ProxyDefinitionModule < Module
+    end
+
     # Evaluate a block into the module we use to define the proxy methods
     def proxy_module_eval(*args, &block)
       if !@proxy_definition_module
         obj = @obj
-        @proxy_definition_module = m = Module.new do
+        @proxy_definition_module = m = ProxyDefinitionModule.new do
           define_method("__flexmock_proxy") do
             if box = obj.instance_variable_get(:@flexmock_proxy)
               box.proxy
@@ -417,19 +436,7 @@ class FlexMock
     # not a singleton, all we need to do is override it with our own
     # singleton.
     def hide_existing_method(method_name)
-      existing_method = stow_existing_definition(method_name)
       define_proxy_method(method_name)
-      existing_method
-    end
-
-    # Stow the existing method definition so that it can be recovered
-    # later.
-    def stow_existing_definition(method_name)
-      if !@method_definitions.has_key?(method_name)
-        @method_definitions[method_name] = target_class_eval { instance_method(method_name) }
-      end
-      @method_definitions[method_name]
-    rescue NameError
     end
 
     # Define a proxy method that forwards to our mock object.  The
