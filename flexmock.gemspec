@@ -10,7 +10,7 @@ spec = Gem::Specification.new do |s|
     interface is simple, it is very flexible.
   }
 
-  s.required_ruby_version = ">= 2.0"
+  s.required_ruby_version = ">= 2.2"
 
   s.license = 'MIT'
 
