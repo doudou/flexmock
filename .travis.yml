@@ -7,12 +7,25 @@ rvm:
   - 2.6
   - 2.7
   - ruby-head
-  - jruby-9.1.5.0
 
 matrix:
+  include:
+    - rvm: jruby-9.1.17.0
+      jdk: openjdk8
+      name: "JRuby 9.1"
+    - rvm: jruby-9.2.11.1
+      jdk: openjdk11
+      name: "JRuby 9.2"
+
   allow_failures:
     - rvm: ruby-head
+    # Revisit when fixing https://github.com/jruby/jruby/issues/4678
+    - name: "JRuby 9.2"
   fast_finish: true
+
+env:
+  global:
+    - JRUBY_OPTS="--debug"
 
 script:
     - rake test
