@@ -279,7 +279,7 @@ class FlexMock
         expectation_blocks    = @initialize_expectation_blocks = Array.new
         expectation_recorders = @initialize_expectation_recorders = Array.new
         @initialize_override = Module.new do
-          define_method :initialize do |*args, &block|
+          define_method :initialize do |*args, **kwargs, &block|
             if self.class.respond_to?(:__flexmock_proxy) && (mock = self.class.__flexmock_proxy)
               container = mock.flexmock_container
               mock = container.flexmock(self)
@@ -290,7 +290,7 @@ class FlexMock
                 r.apply(mock)
               end
             end
-            super(*args, &block)
+            super(*args, **kwargs, &block)
           end
         end
         override = @initialize_override
@@ -333,11 +333,11 @@ class FlexMock
     # the stub.
     def flexmock_invoke_original(method, args)
       if (original_method = find_original_method(method))
-        if Proc === args.last
-          block = args.last
-          args = args[0..-2]
-        end
-        original_method.call(*args, &block)
+        block = args.pop if Proc === args.last
+        kwargs = args.pop if Hash === args.last
+
+        kwargs ||= {}
+        original_method.call(*args, **kwargs, &block)
       else
         @obj.__send__(:method_missing, method, *args, &block)
       end

@@ -16,9 +16,9 @@ class FlexMock
     end
 
     # Apply the constraint method to all expectations in the composite.
-    def method_missing(sym, *args, &block)
+    def method_missing(sym, *args, **kwargs, &block)
       @expectations.each do |expectation|
-        expectation.send(sym, *args, &block)
+        expectation.send(sym, *args, **kwargs, &block)
       end
       self
     end
