@@ -14,19 +14,19 @@ class FlexMock
 
     private
 
-    def _assert_spy_called(negative, spy, method_name, *args)
+    def _assert_spy_called(negative, spy, method_name, *args, **kw)
       options = {}
       if method_name.is_a?(Hash)
         options = method_name
         method_name = args.shift
       end
       args = nil if args == [:_]
-      bool = spy.flexmock_received?(method_name, args, options)
+      bool = spy.flexmock_received?(method_name, args, kw, options)
       if negative
         bool = !bool
-        message = describe_spy_negative_expectation(spy, method_name, args, options)
+        message = describe_spy_negative_expectation(spy, method_name, args, kw, options)
       else
-        message = describe_spy_expectation(spy, method_name, args, options)
+        message = describe_spy_expectation(spy, method_name, args, kw, options)
       end
       assert bool, message
     end

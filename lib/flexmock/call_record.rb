@@ -11,10 +11,10 @@
 
 class FlexMock
 
-  CallRecord = Struct.new(:method_name, :args, :block_given, :expectation) do
-    def matches?(sym, actual_args, options)
+  CallRecord = Struct.new(:method_name, :args, :kw, :block_given, :expectation) do
+    def matches?(sym, expected_args, expected_kw, options)
       method_name == sym &&
-        ArgumentMatching.all_match?(actual_args, args) &&
+        ArgumentMatching.all_match?(expected_args, expected_kw, args, kw) &&
         matches_block?(options[:with_block])
     end
 

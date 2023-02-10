@@ -137,23 +137,23 @@ class FlexMock
   end
 
   # Handle missing methods by attempting to look up a handler.
-  def method_missing(sym, *args, &block)
+  def method_missing(sym, *args, **kw, &block)
     FlexMock.verify_mocking_allowed!
 
     enhanced_args = block_given? ? args + [block] : args
-    call_record = CallRecord.new(sym, enhanced_args, block_given?)
+    call_record = CallRecord.new(sym, enhanced_args, kw, block_given?)
     @calls << call_record
     flexmock_wrap do
       if flexmock_closed?
         FlexMock.undefined
       elsif exp = flexmock_expectations_for(sym)
-        exp.call(enhanced_args, call_record)
+        exp.call(enhanced_args, kw, call_record)
       elsif @base_class && @base_class.flexmock_defined?(sym)
         FlexMock.undefined
       elsif @ignore_missing
         FlexMock.undefined
       else
-        super(sym, *args, &block)
+        super(sym, *args, **kw, &block)
       end
     end
   end
@@ -167,9 +167,9 @@ class FlexMock
   end
 
   # Find the mock expectation for method sym and arguments.
-  def flexmock_find_expectation(method_name, *args) # :nodoc:
+  def flexmock_find_expectation(method_name, *args, **kw) # :nodoc:
     if exp = flexmock_expectations_for(method_name)
-      exp.find_expectation(*args)
+      exp.find_expectation(args, kw)
     end
   end
 
@@ -195,8 +195,8 @@ class FlexMock
   CALL_VALIDATOR = CallValidator.new
 
   # True if the mock received the given method and arguments.
-  def flexmock_received?(method_name, args, options={})
-    CALL_VALIDATOR.received?(@calls, method_name, args, options)
+  def flexmock_received?(method_name, args, kw, options = {})
+    CALL_VALIDATOR.received?(@calls, method_name, args, kw, options)
   end
 
   # Return the list of calls made on this mock. Used in formatting
@@ -207,13 +207,17 @@ class FlexMock
 
   # Invocke the original non-mocked functionality for the given
   # symbol.
-  def flexmock_invoke_original(method_name, args)
+  def flexmock_invoke_original(method_name, args, kw = {})
     return FlexMock.undefined
   end
 
   # Override the built-in +method+ to include the mocked methods.
   def method(method_name)
-    flexmock_expectations_for(method_name) || super
+    if (expectations = flexmock_expectations_for(method_name))
+      ->(*args, **kw) { expectations.call(args, kw) }
+    else
+      super
+    end
   rescue NameError => ex
     if ignore_missing?
       proc { FlexMock.undefined }
@@ -248,8 +252,8 @@ class FlexMock
   ON_RUBY_20 = (RUBY_VERSION =~ /^2\.0\./)
 
   # Using +location+, define the expectations specified by +args+.
-  def flexmock_define_expectation(location, *args)
-    @last_expectation = EXP_BUILDER.parse_should_args(self, args) do |method_name|
+  def flexmock_define_expectation(location, *args, **kw)
+    @last_expectation = EXP_BUILDER.parse_should_args(self, args, kw) do |method_name|
       exp = flexmock_expectations_for(method_name) || ExpectationDirector.new(method_name)
       @expectations[method_name] = exp
       result = Expectation.new(self, method_name, location)
@@ -258,7 +262,7 @@ class FlexMock
 
       if @base_class && !@base_class.flexmock_defined?(method_name)
         if !ON_RUBY_20 || !@base_class.ancestors.include?(Class)
-          result = ExplicitNeeded.new(result, method_name, @base_class) 
+          result = ExplicitNeeded.new(result, method_name, @base_class)
         end
       end
       result

@@ -78,23 +78,38 @@ class FlexMock
 
     # Class method to format a method name and argument list as a nice
     # looking string.
-    def format_call(sym, args)  # :nodoc:
-      "#{sym}(#{format_args(args)})"
+    def format_call(sym, args, kw)  # :nodoc:
+      "#{sym}(#{format_args(args, kw)})"
     end
 
     # Class method to format a list of args (the part between the
     # parenthesis).
-    def format_args(args)
-      if args
-        args = args.map do |a|
-          FlexMock.forbid_mocking("<recursive call to mocked method in #inspect>") do
-            a.inspect
+    def format_args(args, kw)
+      args =
+        if args
+          args = args.map do |a|
+            FlexMock.forbid_mocking("<recursive call to mocked method in #inspect>") do
+              a.inspect
+            end
           end
+          args.join(', ')
+        else
+          "*args"
         end
-        args.join(', ')
-      else
-        "*args"
-      end
+
+      kw =
+        if kw && !kw.empty?
+          kw = kw.transform_values do |k, v|
+            FlexMock.forbid_mocking("<recursive call to mocked method in #inspect>") do
+              v.inspect
+            end
+          end
+          kw.map { |k, v| "#{k}: #{v}" }.join(', ')
+        else
+          "**kw"
+        end
+
+      [args, kw].join(", ")
     end
 
     # Check will assert the block returns true.  If it doesn't, an

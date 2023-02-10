@@ -22,12 +22,12 @@ class FlexMock
     # hashes, and identifies the method names specified by each.  As each
     # method name is identified, create a mock expectation for it using the
     # supplied block.
-    def parse_should_args(mock, args, &block)  # :nodoc:
+    def parse_should_args(mock, args, kw, &block)  # :nodoc:
       result = CompositeExpectation.new
       args.each do |arg|
         case arg
         when Hash
-          arg.each do |k,v|
+          arg.each do |k, v|
             exp = create_expectation(mock, k, &block).and_return(v)
             result.add(exp)
           end
@@ -35,6 +35,12 @@ class FlexMock
           result.add(create_expectation(mock, arg, &block))
         end
       end
+
+      kw.each do |k, v|
+        exp = create_expectation(mock, k, &block).and_return(v)
+        result.add(exp)
+      end
+
       result
     end
 

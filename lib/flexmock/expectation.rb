@@ -37,6 +37,7 @@ class FlexMock
       @sym = sym
       @location = location
       @expected_args = nil
+      @expected_kw = nil
       @count_validators = []
       @signature_validator = SignatureValidator.new(self)
       @count_validator_class = ExactCountValidator
@@ -50,7 +51,7 @@ class FlexMock
     end
 
     def to_s
-      FlexMock.format_call(@sym, @expected_args)
+      FlexMock.format_call(@sym, @expected_args, @expected_kw)
     end
 
     # Return a description of the matching features of the
@@ -62,7 +63,9 @@ class FlexMock
     #
     def description
       result = "should_receive(#{@sym.inspect})"
-      result << ".with(#{FlexMock.format_args(@expected_args)})" if @expected_args
+      if @expected_args || @expected_kw
+        result << ".with(#{FlexMock.format_args(@expected_args, @expected_kw)})"
+      end
       @count_validators.each do |validator|
         result << validator.describe
       end
@@ -170,13 +173,14 @@ class FlexMock
 
     # Does the argument list match this expectation's argument
     # specification.
-    def match_args(args)
-      ArgumentMatching.all_match?(@expected_args, args)
+    def match_args(args, kw)
+      ArgumentMatching.all_match?(@expected_args, @expected_kw, args, kw)
     end
 
     # Declare that the method should expect the given argument list.
-    def with(*args)
+    def with(*args, **kw)
       @expected_args = args
+      @expected_kw = kw
       self
     end
 
@@ -189,28 +193,47 @@ class FlexMock
     # arguments of any type.
     def with_any_args
       @expected_args = nil
+      @expected_kw = nil
+      self
+    end
+
+    # Declare that the method can be called with any number of
+    # arguments of any type.
+    def with_any_kw_args
+      @expected_kw = nil
+      self
+    end
+
+    # Declare that the method can be called with any number of
+    # arguments of any type.
+    def with_any_positional_args
+      @expected_args = nil
       self
     end
 
     # Validate general parameters on the call signature
     def with_signature(
-        required_arguments: 0, optional_arguments: 0, splat: false,
-        required_keyword_arguments: [], optional_keyword_arguments: [], keyword_splat: false)
+      required_arguments: 0, optional_arguments: 0, splat: false,
+      required_keyword_arguments: [], optional_keyword_arguments: [],
+      keyword_splat: false
+    )
       @signature_validator = SignatureValidator.new(
-          self,
-          required_arguments: required_arguments,
-          optional_arguments: optional_arguments,
-          splat: splat,
-          required_keyword_arguments: required_keyword_arguments,
-          optional_keyword_arguments: optional_keyword_arguments,
-          keyword_splat: keyword_splat)
+        self,
+        required_arguments: required_arguments,
+        optional_arguments: optional_arguments,
+        splat: splat,
+        required_keyword_arguments: required_keyword_arguments,
+        optional_keyword_arguments: optional_keyword_arguments,
+        keyword_splat: keyword_splat
+      )
       self
     end
 
     # Validate that the passed arguments match the method signature from the
     # given instance method
     def with_signature_matching(instance_method)
-      @signature_validator = SignatureValidator.from_instance_method(self, instance_method)
+      @signature_validator =
+        SignatureValidator.from_instance_method(self, instance_method)
       self
     end
 
@@ -345,16 +368,16 @@ class FlexMock
 
     def pass_thru(&block)
       block ||= lambda { |value| value }
-      and_return { |*args|
+      and_return { |*args, **kw|
         begin
-          block.call(@mock.flexmock_invoke_original(@sym, args))
+          block.call(@mock.flexmock_invoke_original(@sym, args, kw))
         rescue NoMethodError => e
           if e.name == @sym
             raise e, "#{e.message} while performing #pass_thru in expectation object #{self}"
           else
             raise
           end
-        end 
+        end
       }
     end
 

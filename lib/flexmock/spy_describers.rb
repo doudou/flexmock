@@ -1,25 +1,25 @@
 class FlexMock
 
     module SpyDescribers
-      def spy_description(spy, sym, args, options)
+      def spy_description(spy, sym, args, kw, options)
         result = "have received "
-        result << FlexMock.format_call(sym, args)
+        result << FlexMock.format_call(sym, args, kw)
         result << times_description(options[:times])
         result << block_description(options[:with_block])
         result
       end
 
-      def describe_spy_expectation(spy, sym, args, options={})
-        describe_spy(spy, sym, args, options)
+      def describe_spy_expectation(spy, sym, args, kw, options={})
+        describe_spy(spy, sym, args, kw, options)
       end
 
-      def describe_spy_negative_expectation(spy, sym, args, options={})
-        describe_spy(spy, sym, args, options, " NOT")
+      def describe_spy_negative_expectation(spy, sym, args, kw, options={})
+        describe_spy(spy, sym, args, kw, options, " NOT")
       end
 
-      def describe_spy(spy, sym, args, options, not_clause="")
+      def describe_spy(spy, sym, args, kw, options, not_clause="")
         result = "expected "
-        result << FlexMock.format_call(sym, args)
+        result << FlexMock.format_call(sym, args, kw)
         result << " to#{not_clause} be received by " << spy.inspect
         result << times_description(options[:times])
         result << block_description(options[:with_block])
@@ -44,7 +44,7 @@ class FlexMock
       def append_call_record(result, call_record)
         result <<
           "    " <<
-          FlexMock.format_call(call_record.method_name, call_record.args)
+          FlexMock.format_call(call_record.method_name, call_record.args, call_record.kw)
         if call_record.expectation
           result <<
             " matched by " <<

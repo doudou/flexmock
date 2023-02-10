@@ -24,10 +24,10 @@ class FlexMock
     # * :on_count => n -- If given, the :and validations on only run on the
     #                     nth invocation.
     #
-    def received?(calls, method_name, args, options)
+    def received?(calls, method_name, args, kw, options)
       count = 0
       calls.each { |call_record|
-        if call_record.matches?(method_name, args, options)
+        if call_record.matches?(method_name, args, kw, options)
           count += 1
           run_additional_validations(call_record, count, options)
         end

@@ -150,8 +150,8 @@ class FlexMock
     # to the result.
     #
     # See Expectation for a list of declarators that can be used.
-    def should_receive(*args)
-      flexmock_define_expectation(caller, *args)
+    def should_receive(*args, **kw)
+      flexmock_define_expectation(caller, *args, **kw)
     end
 
     def should_expect(*args)
@@ -161,11 +161,11 @@ class FlexMock
     # Invoke the original of a mocked method
     #
     # Usually called in a #and_return statement
-    def invoke_original(m, *args, &block)
+    def invoke_original(m, *args, **kw, &block)
       if block
         args << block
       end
-      flexmock_invoke_original(m, args)
+      flexmock_invoke_original(m, args, kw)
     end
 
     # Whether the given method's original definition has been stored
@@ -203,8 +203,8 @@ class FlexMock
           @proxy_definition_module.method_defined?(m)
     end
 
-    def flexmock_define_expectation(location, *args)
-      EXP_BUILDER.parse_should_args(self, args) do |method_name|
+    def flexmock_define_expectation(location, *args, **kw)
+      EXP_BUILDER.parse_should_args(self, args, kw) do |method_name|
         if !has_proxied_method?(method_name)
           define_proxy_method(method_name)
         end
@@ -265,9 +265,9 @@ class FlexMock
       end
 
       allocators.each do |allocate_method|
-        flexmock_define_expectation(location, allocate_method).and_return { |*args|
+        flexmock_define_expectation(location, allocate_method).and_return { |*args, **kw|
           create_new_mocked_object(
-            allocate_method, args, expectation_recorder, block)
+            allocate_method, args, kw, expectation_recorder, block)
         }
       end
       expectation_recorder
@@ -320,8 +320,8 @@ class FlexMock
     # (2) Pass to the block for custom configuration.
     # (3) Apply any recorded expecations
     #
-    def create_new_mocked_object(allocate_method, args, recorder, block)
-      new_obj = flexmock_invoke_original(allocate_method, args)
+    def create_new_mocked_object(allocate_method, args, kw, recorder, block)
+      new_obj = flexmock_invoke_original(allocate_method, args, kw)
       mock = flexmock_container.flexmock(new_obj)
       block.call(mock) unless block.nil?
       recorder.apply(mock)
@@ -331,15 +331,15 @@ class FlexMock
 
     # Invoke the original definition of method on the object supported by
     # the stub.
-    def flexmock_invoke_original(method, args)
+    def flexmock_invoke_original(method, args, kw)
       if (original_method = find_original_method(method))
         if Proc === args.last
           block = args.last
           args = args[0..-2]
         end
-        original_method.call(*args, &block)
+        original_method.call(*args, **kw, &block)
       else
-        @obj.__send__(:method_missing, method, *args, &block)
+        @obj.__send__(:method_missing, method, *args, **kw, &block)
       end
     end
 
