@@ -31,9 +31,9 @@ class FlexMock
 
     WHITELIST = [:with_signature_matching]
 
-    def method_missing(sym, *args, &block)
+    def method_missing(sym, *args, **kw, &block)
       if explicit? || WHITELIST.include?(sym)
-        @expectation.send(sym, *args, &block)
+        @expectation.send(sym, *args, **kw, &block)
       else
         fail NoMethodError, "Cannot stub methods not defined by the base class\n" +
           "   Method:     #{@method_name}\n" +

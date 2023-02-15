@@ -65,13 +65,31 @@ class AssertSpyCalledTest < Minitest::Test
     spy.foo
     spy.foo(1)
     spy.foo("HI")
+    spy.foo("Hello", "World", 10, { :options => true })
     spy.foo("Hello", "World", 10, :options => true)
-    assert_spy_called spy, {:times => 4}, :foo, :_
+    assert_spy_called spy, {:times => 5}, :foo, :_
+  end
+
+  def test_assert_detects_kw
+    spy.foo(:options => true)
+    times = 1
+
+    if RUBY_VERSION < "3"
+      spy.foo({ :options => true })
+      times += 1
+    end
+
+    assert_spy_called spy, {:times => times}, :foo, options: true
   end
 
   def test_assert_rejects_bad_count_on_any_args
     spy.foo
-    assert_fails(/^expected foo\(\*args\) to be received by <FlexMock:AssertSpyCalledTest::FooBar Mock> twice/i) do
+    signature = if RUBY_VERSION < "3"
+      'foo\(\*args\)'
+    else
+      'foo\(\*args, \*\*kwargs\)'
+    end
+    assert_fails(/^expected #{signature} to be received by <FlexMock:AssertSpyCalledTest::FooBar Mock> twice/i) do
       assert_spy_called spy, {:times => 2}, :foo, :_
     end
   end

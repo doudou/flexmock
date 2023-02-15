@@ -44,7 +44,7 @@ class FlexMock
                "\nDefined expectations:\n  " +
                @expectations.map(&:description).join("\n  ") }
       ) { !exp.nil? }
-      returned_value = exp.verify_call(*args)
+      returned_value = exp.verify_call(args, kw)
       returned_value
     end
 

@@ -219,17 +219,17 @@ class FlexMock
       end
     end
 
-    def flexmock_find_expectation(*args)
-      @mock.flexmock_find_expectation(*args)
+    def flexmock_find_expectation(*args, **kw)
+      @mock.flexmock_find_expectation(*args, **kw)
     end
 
     def add_mock_method(method_name)
       proxy_module_eval do
-        define_method(method_name) { |*args, &block|
+        define_method(method_name) { |*args, **kw, &block|
           proxy = __flexmock_proxy or
             fail "Missing FlexMock proxy " +
                  "(for method_name=#{method_name.inspect}, self=\#{self})"
-          proxy.send(method_name, *args, &block)
+          proxy.send(method_name, *args, **kw, &block)
         }
       end
     end
@@ -279,7 +279,7 @@ class FlexMock
         expectation_blocks    = @initialize_expectation_blocks = Array.new
         expectation_recorders = @initialize_expectation_recorders = Array.new
         @initialize_override = Module.new do
-          define_method :initialize do |*args, &block|
+          define_method :initialize do |*args, **kw, &block|
             if self.class.respond_to?(:__flexmock_proxy) && (mock = self.class.__flexmock_proxy)
               container = mock.flexmock_container
               mock = container.flexmock(self)
@@ -290,7 +290,7 @@ class FlexMock
                 r.apply(mock)
               end
             end
-            super(*args, &block)
+            super(*args, **kw, &block)
           end
         end
         override = @initialize_override
@@ -373,8 +373,8 @@ class FlexMock
     end
 
     # Forward to the mock
-    def flexmock_received?(*args)
-      @mock.flexmock_received?(*args)
+    def flexmock_received?(*args, **kw)
+      @mock.flexmock_received?(*args, **kw)
     end
 
     # Forward to the mock
@@ -406,15 +406,15 @@ class FlexMock
 
     # Evaluate a block (or string) in the context of the singleton
     # class of the target partial object.
-    def target_class_eval(*args, &block)
-      target_singleton_class.class_eval(*args, &block)
+    def target_class_eval(*args, **kw, &block)
+      target_singleton_class.class_eval(*args, **kw, &block)
     end
 
     class ProxyDefinitionModule < Module
     end
 
     # Evaluate a block into the module we use to define the proxy methods
-    def proxy_module_eval(*args, &block)
+    def proxy_module_eval(*args, **kw, &block)
       if !@proxy_definition_module
         obj = @obj
         @proxy_definition_module = m = ProxyDefinitionModule.new do
@@ -426,7 +426,7 @@ class FlexMock
         end
         target_class_eval { prepend m }
       end
-      @proxy_definition_module.class_eval(*args, &block)
+      @proxy_definition_module.class_eval(*args, **kw, &block)
     end
 
     # Hide the existing method definition with a singleton defintion
@@ -445,15 +445,15 @@ class FlexMock
     def define_proxy_method(method_name)
       if method_name =~ /=$/
         proxy_module_eval do
-          define_method(method_name) do |*args, &block|
-            __flexmock_proxy.mock.__send__(method_name, *args, &block)
+          define_method(method_name) do |*args, **kw, &block|
+            __flexmock_proxy.mock.__send__(method_name, *args, **kw, &block)
           end
         end
       else
         proxy_module_eval <<-EOD
-          def #{method_name}(*args, &block)
+          def #{method_name}(*args, **kw, &block)
             FlexMock.verify_mocking_allowed!
-            __flexmock_proxy.mock.#{method_name}(*args, &block)
+            __flexmock_proxy.mock.#{method_name}(*args, **kw, &block)
           end
         EOD
       end

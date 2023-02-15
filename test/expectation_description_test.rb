@@ -33,6 +33,16 @@ class ExpectationDescriptionTest < Minitest::Test
     assert_equal "should_receive(:foo).with(1, \"HI\")", @exp.description
   end
 
+  def test_with_kwargs
+    @exp.with(foo: "bar")
+    assert_equal "should_receive(:foo).with(foo: \"bar\")", @exp.description
+  end
+
+  def test_with_args_and_kwargs
+    @exp.with(1, "two", foo: "bar")
+    assert_equal "should_receive(:foo).with(1, \"two\", foo: \"bar\")", @exp.description
+  end
+
   def test_with_never
     @exp.never
     assert_equal "should_receive(:foo).never", @exp.description

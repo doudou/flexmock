@@ -421,10 +421,38 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_with_kw_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(1, a: 2).once
+      m.hi(1, a: 2)
+    end
+
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_kw_args(FlexMock.hsh(:a => 1, :b => 2)).once
+      m.hi(:a => 1, :b => 2, :c => 3)
+    end
+  end
+
+  def test_with_kw_not_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(1, a: 2)
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(1, a: 2, b: 3)
+      }
+    end
+  end
+
   def test_with_hash_matching
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2)).once
-      m.hi(:a => 1, :b => 2, :c => 3)
+      m.hi({:a => 1, :b => 2, :c => 3})
+    end
+
+    if RUBY_VERSION < "3"
+      FlexMock.use('greeter') do |m|
+        m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2)).once
+        m.hi(:a => 1, :b => 2, :c => 3)
+      end
     end
   end
 
@@ -432,8 +460,17 @@ class TestFlexMockShoulds < Minitest::Test
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2))
       assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
-        m.hi(:a => 1, :b => 4, :c => 3)
+        m.hi({:a => 1, :b => 4, :c => 3})
       }
+    end
+
+    if RUBY_VERSION < "3"
+      FlexMock.use('greeter') do |m|
+        m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2))
+        assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+          m.hi(:a => 1, :b => 4, :c => 3)
+        }
+      end
     end
   end
 
@@ -1231,11 +1268,13 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
-  def test_it_interprets_a_hash_as_last_positional_argument_if_no_keyword_arguments_are_expected
-    FlexMock.use do |mock|
-      mock = flexmock
-      mock.should_receive(:m).with_signature(required_arguments: 2, optional_arguments: 2)
-      mock.m(1, 2, 3, test: 4)
+  if RUBY_VERSION < "3"
+    def test_it_interprets_a_hash_as_last_positional_argument_if_no_keyword_arguments_are_expected
+      FlexMock.use do |mock|
+        mock = flexmock
+        mock.should_receive(:m).with_signature(required_arguments: 2, optional_arguments: 2)
+        mock.m(1, 2, 3, test: 4)
+      end
     end
   end
 
@@ -1350,7 +1389,7 @@ class TestFlexMockShoulds < Minitest::Test
       FlexMock.use do |mock|
         mock.should_receive(:m).
           with_signature(optional_keyword_arguments: [:b], required_arguments: 1)
-        mock.m(Hash.new)
+        mock.m({ :fool => "bar" })
       end
   end
 
@@ -1377,7 +1416,12 @@ class TestFlexMockShoulds < Minitest::Test
       FlexMock.use do |mock|
         mock.should_receive(:m).with_signature(required_arguments: 1, required_keyword_arguments: [:b])
         mock.m(10, b: 10) { }
-        assert_mock_failure(check_failed_error, message: /in mock 'unknown': m\(\*args\) expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+        signature = if RUBY_VERSION < "3"
+                      'm\(\*args\)'
+                    else
+                      'm\(\*args, \*\*kwargs\)'
+                    end
+        assert_mock_failure(check_failed_error, message: /in mock 'unknown': #{signature} expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
           mock.m(b: 10) { }
         end
       end
@@ -1394,10 +1438,14 @@ class TestFlexMockShoulds < Minitest::Test
       FlexMock.use do |mock|
         mock.should_receive(:m).
           with_signature(required_keyword_arguments: [:b], required_arguments: 1)
-        assert_mock_failure(check_failed_error, message: /in mock 'unknown': m\(\*args\) expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
-          mock.m(Hash.new)
+        signature = 'm\(\*args, \*\*kwargs\)'
+        if RUBY_VERSION < "3"
+          signature = 'm\(\*args\)'
+          assert_mock_failure(check_failed_error, message: /in mock 'unknown': #{signature} expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+            mock.m({ :foo => "bar" })
+          end
         end
-        assert_mock_failure(check_failed_error, message: /in mock 'unknown': m\(\*args\) expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
+        assert_mock_failure(check_failed_error, message: /in mock 'unknown': #{signature} expects at least 1 positional arguments but got only 0/, line: __LINE__+1) do
           mock.m(b: 10)
         end
       end
@@ -1484,4 +1532,3 @@ end
 if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.1')
     require_relative 'should_receive_ruby21plus'
 end
-
