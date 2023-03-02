@@ -174,11 +174,7 @@ class FlexMock
     # Does the argument list match this expectation's argument
     # specification.
     def match_args(args, kw)
-      expected_args, expected_kw = @signature_validator.keyword_to_positional_arguments(
-        @expected_args, @expected_kw
-      )
-      args, kw = @signature_validator.keyword_to_positional_arguments(args, kw)
-      ArgumentMatching.all_match?(expected_args, expected_kw, args, kw)
+      ArgumentMatching.all_match?(@expected_args, @expected_kw, args, kw)
     end
 
     # Declare that the method should expect the given argument list.

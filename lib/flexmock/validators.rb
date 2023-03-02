@@ -208,29 +208,6 @@ class FlexMock
           keyword_splat: #{self.keyword_splat?})"
     end
 
-    # Converts keyword arguments into positional arguments
-    # depending on the method's signature. This is supposed
-    # to replicate ruby < 3 behavior prior to the separation
-    # of keyword and positional arguments.
-    #
-    # It's a no-op if RUBY_VERSION >= 3
-    def keyword_to_positional_arguments(args, kw)
-      return [args, kw] unless RUBY_VERSION < "3"
-
-      args = args.dup
-      should_convert = (!expects_keyword_arguments? && kw && !kw.empty?) ||
-        (args && args.empty? && !requires_keyword_arguments? && !splat? && kw && !kw.empty? && required_arguments > 0) ||
-        (splat? && keyword_splat? && kw && !kw.empty?)
-
-      if should_convert
-        args ||= []
-        args.push kw
-        kw = {}
-      end
-
-      [args, kw]
-    end
-
     # Validates whether the given arguments match the expected signature
     #
     # @param [Array] args
@@ -239,7 +216,6 @@ class FlexMock
       args = args.dup
       kw ||= Hash.new
 
-      args, kw = keyword_to_positional_arguments(args, kw)
       last_is_proc = false
       begin
         if args.last.kind_of?(Proc)

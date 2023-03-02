@@ -445,14 +445,7 @@ class TestFlexMockShoulds < Minitest::Test
   def test_with_hash_matching
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2)).once
-      m.hi({:a => 1, :b => 2, :c => 3})
-    end
-
-    if RUBY_VERSION < "3"
-      FlexMock.use('greeter') do |m|
-        m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2)).once
-        m.hi(:a => 1, :b => 2, :c => 3)
-      end
+      m.hi({:a => 1, :b => 2, :c => 3}, **{})
     end
   end
 
@@ -460,17 +453,8 @@ class TestFlexMockShoulds < Minitest::Test
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2))
       assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
-        m.hi({:a => 1, :b => 4, :c => 3})
+        m.hi({:a => 1, :b => 4, :c => 3}, **{})
       }
-    end
-
-    if RUBY_VERSION < "3"
-      FlexMock.use('greeter') do |m|
-        m.should_receive(:hi).with(FlexMock.hsh(:a => 1, :b => 2))
-        assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
-          m.hi(:a => 1, :b => 4, :c => 3)
-        }
-      end
     end
   end
 
@@ -1268,16 +1252,6 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
-  if RUBY_VERSION < "3"
-    def test_it_interprets_a_hash_as_last_positional_argument_if_no_keyword_arguments_are_expected
-      FlexMock.use do |mock|
-        mock = flexmock
-        mock.should_receive(:m).with_signature(required_arguments: 2, optional_arguments: 2)
-        mock.m(1, 2, 3, test: 4)
-      end
-    end
-  end
-
   def test_with_signature_splat_validates_required_arguments
     FlexMock.use do |mock|
       mock = flexmock
@@ -1383,14 +1357,6 @@ class TestFlexMockShoulds < Minitest::Test
         with_signature(keyword_splat: true, required_arguments: 1)
       mock.m(10, b: 10)
     end
-  end
-
-  def test_signature_validator_understands_that_a_hash_can_be_used_for_both_keywords_and_positional_arguments
-      FlexMock.use do |mock|
-        mock.should_receive(:m).
-          with_signature(optional_keyword_arguments: [:b], required_arguments: 1)
-        mock.m({ :fool => "bar" })
-      end
   end
 
   def test_signature_validator_understands_that_a_proc_last_can_both_be_a_positional_parameter_and_a_block
