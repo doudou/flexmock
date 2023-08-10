@@ -30,8 +30,8 @@ class FlexMock
   end
 end
 
-if defined?(MiniTest)
-  module MiniTest
+if defined?(Minitest)
+  module Minitest
     class Unit
       class TestCase
         FlexMock::GenericTestCase.define_extensions_on(self)
