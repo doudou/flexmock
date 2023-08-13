@@ -98,7 +98,11 @@ class FlexMock
     end
 
     def assertion_failed_error
-      MiniTest::Assertion
+      if defined?(::Minitest)
+        ::Minitest::Assertion
+      else
+        MiniTest::Assertion
+      end
     end
 
     def check_failed_error
