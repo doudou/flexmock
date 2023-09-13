@@ -61,7 +61,7 @@ class FlexMock
     # * call count validators
     #
     def description
-      result = "should_receive(#{@sym.inspect})"
+      result = ["should_receive(#{@sym.inspect})"]
       result << ".with(#{FlexMock.format_args(@expected_args)})" if @expected_args
       @count_validators.each do |validator|
         result << validator.describe
@@ -69,7 +69,7 @@ class FlexMock
       if !@signature_validator.null?
         result << @signature_validator.describe
       end
-      result
+      result.join
     end
 
     # Validate that this expectation is eligible for an extra call
