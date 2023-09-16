@@ -50,7 +50,7 @@ class FlexMock
     # added.
     def assert_mock_failure(klass, options={}, &block)
       ex = assert_failure(klass, options, &block)
-      file = eval("__FILE__", block.binding)
+      file = block.binding.source_location.first
       assert_matching_line(ex, file, options)
     end
 
