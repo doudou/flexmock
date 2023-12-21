@@ -98,18 +98,22 @@ class FlexMock
         end
 
       kw =
-        if kw && !kw.empty?
-          kw = kw.transform_values do |k, v|
+        if kw.kind_of? HashMatcher
+          kw.inspect
+        elsif kw && !kw.empty?
+          kw = kw.transform_values do |v|
             FlexMock.forbid_mocking("<recursive call to mocked method in #inspect>") do
               v.inspect
             end
           end
           kw.map { |k, v| "#{k}: #{v}" }.join(', ')
-        else
-          "**kw"
+        elsif kw.nil?
+          # Don't append **kwargs to signature if ruby version < 3
+          # in order to not break existing code still on ruby2
+          "**kwargs" unless RUBY_VERSION < "3"
         end
 
-      [args, kw].join(", ")
+      [(args unless args.empty?), kw].compact.join(", ")
     end
 
     # Check will assert the block returns true.  If it doesn't, an

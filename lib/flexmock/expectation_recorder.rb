@@ -23,8 +23,8 @@ class FlexMock
     end
 
     # Save any incoming messages to be played back later.
-    def method_missing(sym, *args, &block)
-      @expectations << [sym, args, block]
+    def method_missing(sym, *args, **kw, &block)
+      @expectations << [sym, args, kw, block]
       self
     end
 
@@ -33,8 +33,8 @@ class FlexMock
     # call).
     def apply(mock)
       obj = mock
-      @expectations.each do |sym, args, block|
-        obj = obj.send(sym, *args, &block)
+      @expectations.each do |sym, args, kw, block|
+        obj = obj.send(sym, *args, **kw, &block)
       end
     end
   end

@@ -62,6 +62,9 @@ class FlexMock
     def ===(target)
       @hash.all? { |k, v| target[k] == v }
     end
+    def empty?
+      @hash.empty?
+    end
     def inspect
       "hsh(#{@hash.inspect})"
     end

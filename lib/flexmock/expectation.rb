@@ -86,31 +86,31 @@ class FlexMock
       FlexMock.framework_adapter.check(e.message) { false }
     end
 
-    def validate_signature(args)
-      @signature_validator.validate(args)
+    def validate_signature(args, kw)
+      @signature_validator.validate(args, kw)
     rescue SignatureValidator::ValidationFailed => e
       FlexMock.framework_adapter.check(e.message) { false }
     end
 
     # Verify the current call with the given arguments matches the
     # expectations recorded in this object.
-    def verify_call(*args)
+    def verify_call(args, kw)
       validate_eligible
       validate_order
-      validate_signature(args)
+      validate_signature(args, kw)
       @actual_count += 1
       perform_yielding(args)
-      return_value(args)
+      return_value(args, kw)
     end
 
     # Public return value (odd name to avoid accidental use as a
     # constraint).
-    def _return_value(args) # :nodoc:
-      return_value(args)
+    def _return_value(args, kw) # :nodoc:
+      return_value(args, kw)
     end
 
     # Find the return value for this expectation. (private version)
-    def return_value(args)
+    def return_value(args, kw)
       case @return_queue.size
       when 0
         block = lambda { |*a| @return_value }
@@ -119,7 +119,7 @@ class FlexMock
       else
         block = @return_queue.shift
       end
-      block.call(*args)
+      block.call(*args, **kw)
     end
     private :return_value
 
@@ -208,6 +208,13 @@ class FlexMock
     # arguments of any type.
     def with_any_positional_args
       @expected_args = nil
+      self
+    end
+
+    # Declare that the method should be called with the given
+    # keyword arguments
+    def with_kw_args(kw)
+      @expected_kw = kw
       self
     end
 

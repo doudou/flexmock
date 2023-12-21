@@ -245,8 +245,8 @@ class FlexMock
   #
   # See Expectation for a list of declarators that can be used.
   #
-  def should_receive(*args)
-    flexmock_define_expectation(caller, *args)
+  def should_receive(*args, **kw)
+    flexmock_define_expectation(caller, *args, **kw)
   end
 
   ON_RUBY_20 = (RUBY_VERSION =~ /^2\.0\./)
@@ -302,8 +302,8 @@ class FlexMock
   # to explicitly invoke the method_missing logic.
   def override_existing_method(method_name)
     sclass.class_eval <<-EOS
-      def #{method_name}(*args, &block)
-        method_missing(:#{method_name}, *args, &block)
+      def #{method_name}(*args, **kw, &block)
+        method_missing(:#{method_name}, *args, **kw, &block)
       end
     EOS
   end

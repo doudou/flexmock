@@ -634,7 +634,7 @@ class TestStubbing < Minitest::Test
     exception = assert_raises(NameError) do
         obj.mocked_method
     end
-    assert_equal "undefined method `does_not_exist' for #{obj}", exception.message
+    assert_match /undefined method `does_not_exist' for/, exception.message
   end
 
   def test_it_checks_whether_mocks_are_forbidden_before_forwarding_the_call

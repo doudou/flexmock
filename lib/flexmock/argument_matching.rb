@@ -26,14 +26,15 @@ class FlexMock
 
     def all_match_kw?(expected_kw, actual_kw)
       return true if expected_kw.nil?
+      return expected_kw === actual_kw if expected_kw.kind_of? HashMatcher
 
       matched_expected_k = Set.new
       actual_kw.each do |actual_k, actual_v|
-        found_match = expected_kw.any? do |k, v|
+        found_match = expected_kw.find do |k, v|
           match?(k, actual_k) && match?(v, actual_v)
         end
-        matched_expected_k << found_match[0]
         return false unless found_match
+        matched_expected_k << found_match
       end
 
       return false unless matched_expected_k.size == expected_kw.keys.size

@@ -212,9 +212,9 @@ class FlexMock
     #
     # @param [Array] args
     # @raise ValidationFailed
-    def validate(args)
+    def validate(args, kw)
       args = args.dup
-      kw_args = Hash.new
+      kw ||= Hash.new
 
       last_is_proc = false
       begin
@@ -225,19 +225,8 @@ class FlexMock
       rescue NoMethodError
       end
 
-      last_is_kw_hash = false
-      if expects_keyword_arguments?
-        last_is_kw_hash =
-          begin
-            args.last.kind_of?(Hash)
-          rescue NoMethodError
-          end
-
-        if last_is_kw_hash
-          kw_args = args.pop
-        elsif requires_keyword_arguments?
-          raise ValidationFailed, "#{@exp} expects keyword arguments but none were provided"
-        end
+      if expects_keyword_arguments? && requires_keyword_arguments? && kw.empty?
+        raise ValidationFailed, "#{@exp} expects keyword arguments but none were provided"
       end
 
       # There is currently no way to disambiguate "given a block" from "given a
@@ -249,19 +238,9 @@ class FlexMock
           raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{positional_count}"
         end
 
-        if (required_arguments - positional_count) == 1 && (last_is_kw_hash || last_is_proc)
-          if last_is_kw_hash
-            last_is_kw_hash = false
-            kw_args = Hash.new
-          else
-            last_is_proc = false
-          end
-          positional_count += 1
-        elsif (required_arguments - positional_count) == 2 && (last_is_kw_hash && last_is_proc)
-          last_is_kw_hash = false
-          kw_args = Hash.new
+        if (required_arguments - positional_count) == 1 && last_is_proc
           last_is_proc = false
-          positional_count += 2
+          positional_count += 1
         else
           raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{positional_count}"
         end
@@ -274,12 +253,12 @@ class FlexMock
       end
 
       missing_keyword_arguments = required_keyword_arguments.
-        find_all { |k| !kw_args.has_key?(k) }
+        find_all { |k| !kw.has_key?(k) }
       if !missing_keyword_arguments.empty?
         raise ValidationFailed, "#{@exp} missing required keyword arguments #{missing_keyword_arguments.map(&:to_s).sort.join(", ")}"
       end
       if !keyword_splat?
-        kw_args.each_key do |k|
+        kw.each_key do |k|
           if !optional_keyword_arguments.include?(k) && !required_keyword_arguments.include?(k)
             raise ValidationFailed, "#{@exp} given unexpected keyword argument #{k}"
           end
@@ -313,4 +292,3 @@ class FlexMock
     end
   end
 end
-

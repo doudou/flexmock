@@ -57,6 +57,17 @@ class TestNaming < Minitest::Test
     end
   end
 
+  def test_format_call_properly_adds_splat_operators
+    assert_equal "foo(*args)", FlexMock.format_call(:foo, nil, [])
+    unless RUBY_VERSION < "3"
+      assert_equal "foo(**kwargs)", FlexMock.format_call(:foo, [], nil)
+      assert_equal "foo(*args, **kwargs)", FlexMock.format_call(:foo, nil, nil)
+    else
+      assert_equal "foo()", FlexMock.format_call(:foo, [], nil)
+      assert_equal "foo(*args)", FlexMock.format_call(:foo, nil, nil)
+    end
+  end
+
   def test_mock_can_override_inspect
     FlexMock.use("XYZZY") do |m|
       m.should_receive(:inspect).with_no_args.and_return("MOCK-INSPECT")

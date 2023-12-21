@@ -16,9 +16,9 @@ class FlexMock
     end
 
     # Apply the constraint method to all expectations in the composite.
-    def method_missing(sym, *args, &block)
+    def method_missing(sym, *args, **kw, &block)
       @expectations.each do |expectation|
-        expectation.send(sym, *args, &block)
+        expectation.send(sym, *args, **kw, &block)
       end
       self
     end
@@ -38,9 +38,9 @@ class FlexMock
 
     # Start a new method expectation.  The following constraints will be
     # applied to the new expectation.
-    def should_receive(*args, &block)
+    def should_receive(*args, **kw, &block)
       @expectations.first.mock.
-        flexmock_define_expectation(caller, *args, &block)
+        flexmock_define_expectation(caller, *args, **kw, &block)
     end
 
     # Return a string representations
