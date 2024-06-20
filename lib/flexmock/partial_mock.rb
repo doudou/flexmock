@@ -234,8 +234,8 @@ class FlexMock
       end
     end
 
-    def flexmock_find_expectation(*args, **kw)
-      @mock.flexmock_find_expectation(*args, **kw)
+    def flexmock_find_expectation(*args, **kw, &block)
+      @mock.flexmock_find_expectation(*args, **kw, &block)
     end
 
     def add_mock_method(method_name)

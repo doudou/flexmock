@@ -41,6 +41,7 @@ class FlexMock
       @count_validators = []
       @signature_validator = SignatureValidator.new(self)
       @count_validator_class = ExactCountValidator
+      @with_block = nil
       @actual_count = 0
       @return_value = nil
       @return_queue = []
@@ -86,48 +87,47 @@ class FlexMock
       FlexMock.framework_adapter.check(e.message) { false }
     end
 
-    def validate_signature(args, kw)
-      @signature_validator.validate(args, kw)
+    def validate_signature(args, kw, block)
+      @signature_validator.validate(args, kw, block)
     rescue SignatureValidator::ValidationFailed => e
       FlexMock.framework_adapter.check(e.message) { false }
     end
 
     # Verify the current call with the given arguments matches the
     # expectations recorded in this object.
-    def verify_call(args, kw)
+    def verify_call(args, kw, block)
       validate_eligible
       validate_order
-      validate_signature(args, kw)
+      validate_signature(args, kw, block)
       @actual_count += 1
-      perform_yielding(args)
-      return_value(args, kw)
+      perform_yielding(block)
+      return_value(args, kw, block)
     end
 
     # Public return value (odd name to avoid accidental use as a
     # constraint).
-    def _return_value(args, kw) # :nodoc:
-      return_value(args, kw)
+    def _return_value(args, kw, block) # :nodoc:
+      return_value(args, kw, block)
     end
 
     # Find the return value for this expectation. (private version)
-    def return_value(args, kw)
+    def return_value(args, kw, block)
       case @return_queue.size
       when 0
-        block = lambda { |*a| @return_value }
+        ret_block = lambda { |*, **| @return_value }
       when 1
-        block = @return_queue.first
+        ret_block = @return_queue.first
       else
-        block = @return_queue.shift
+        ret_block = @return_queue.shift
       end
-      block.call(*args, **kw)
+      ret_block.call(*args, **kw, &block)
     end
     private :return_value
 
     # Yield stored values to any blocks given.
-    def perform_yielding(args)
+    def perform_yielding(block)
       @return_value = nil
       unless @yield_queue.empty?
-        block = args.last
         values = (@yield_queue.size == 1) ? @yield_queue.first : @yield_queue.shift
         if block && block.respond_to?(:call)
           values.each do |v|
@@ -173,8 +173,8 @@ class FlexMock
 
     # Does the argument list match this expectation's argument
     # specification.
-    def match_args(args, kw)
-      ArgumentMatching.all_match?(@expected_args, @expected_kw, args, kw)
+    def match_args(args, kw, block)
+      ArgumentMatching.all_match?(@expected_args, @expected_kw, @expected_block, args, kw, block)
     end
 
     # Declare that the method should expect the given argument list.
@@ -215,6 +215,23 @@ class FlexMock
     # keyword arguments
     def with_kw_args(kw)
       @expected_kw = kw
+      self
+    end
+
+    # Declare that the call should have a block
+    def with_block
+      @expected_block = true
+      self
+    end
+
+    # Declare that the call should have a block
+    def with_no_block
+      @expected_block = false
+      self
+    end
+
+    def with_optional_block
+      @expected_block = nil
       self
     end
 

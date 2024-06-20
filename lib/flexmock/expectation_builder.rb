@@ -92,7 +92,7 @@ class FlexMock
       names.each do |name|
         exp = mock.flexmock_find_expectation(name)
         if exp
-          next_mock = exp._return_value([], {})
+          next_mock = exp._return_value([], {}, nil)
           check_proper_mock(next_mock, name)
         else
           next_mock = container.flexmock("demeter_#{name}")

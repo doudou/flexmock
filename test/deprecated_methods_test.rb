@@ -39,7 +39,7 @@ class TestFlexMock < Minitest::Test
 
   def test_called_with_block
     called = false
-    s { @mock.mock_handle(:blip) { |block| block.call } }
+    s { @mock.mock_handle(:blip) { |&block| block.call } }
     @mock.blip { called = true }
     assert called, "Block to blip should be called"
   end

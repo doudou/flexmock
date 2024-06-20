@@ -212,44 +212,19 @@ class FlexMock
     #
     # @param [Array] args
     # @raise ValidationFailed
-    def validate(args, kw)
-      args = args.dup
+    def validate(args, kw, block)
       kw ||= Hash.new
-
-      last_is_proc = false
-      begin
-        if args.last.kind_of?(Proc)
-          args.pop
-          last_is_proc = true
-        end
-      rescue NoMethodError
-      end
 
       if expects_keyword_arguments? && requires_keyword_arguments? && kw.empty?
         raise ValidationFailed, "#{@exp} expects keyword arguments but none were provided"
       end
 
-      # There is currently no way to disambiguate "given a block" from "given a
-      # proc as last argument" ... give some leeway in this case
-      positional_count = args.size
-
-      if required_arguments > positional_count
-        if requires_keyword_arguments?
-          raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{positional_count}"
-        end
-
-        if (required_arguments - positional_count) == 1 && last_is_proc
-          last_is_proc = false
-          positional_count += 1
-        else
-          raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{positional_count}"
-        end
+      if required_arguments > args.size
+        raise ValidationFailed, "#{@exp} expects at least #{required_arguments} positional arguments but got only #{args.size}"
       end
 
-      if !splat? && (required_arguments + optional_arguments) < positional_count
-        if !last_is_proc || (required_arguments + optional_arguments) < positional_count - 1
-          raise ValidationFailed, "#{@exp} expects at most #{required_arguments + optional_arguments} positional arguments but got #{positional_count}"
-        end
+      if !splat? && (required_arguments + optional_arguments) < args.size
+        raise ValidationFailed, "#{@exp} expects at most #{required_arguments + optional_arguments} positional arguments but got #{args.size}"
       end
 
       missing_keyword_arguments = required_keyword_arguments.

@@ -140,14 +140,13 @@ class FlexMock
   def method_missing(sym, *args, **kw, &block)
     FlexMock.verify_mocking_allowed!
 
-    enhanced_args = block_given? ? args + [block] : args
-    call_record = CallRecord.new(sym, enhanced_args, kw, block_given?)
+    call_record = CallRecord.new(sym, args, kw, block)
     @calls << call_record
     flexmock_wrap do
       if flexmock_closed?
         FlexMock.undefined
       elsif exp = flexmock_expectations_for(sym)
-        exp.call(enhanced_args, kw, call_record)
+        exp.call(args, kw, block, call_record)
       elsif @base_class && @base_class.flexmock_defined?(sym)
         FlexMock.undefined
       elsif @ignore_missing
@@ -167,9 +166,9 @@ class FlexMock
   end
 
   # Find the mock expectation for method sym and arguments.
-  def flexmock_find_expectation(method_name, *args, **kw) # :nodoc:
+  def flexmock_find_expectation(method_name, *args, **kw, &block) # :nodoc:
     if exp = flexmock_expectations_for(method_name)
-      exp.find_expectation(args, kw)
+      exp.find_expectation(args, kw, block)
     end
   end
 
@@ -214,7 +213,7 @@ class FlexMock
   # Override the built-in +method+ to include the mocked methods.
   def method(method_name)
     if (expectations = flexmock_expectations_for(method_name))
-      ->(*args, **kw) { expectations.call(args, kw) }
+      ->(*args, **kw, &block) { expectations.call(args, kw, block) }
     else
       super
     end

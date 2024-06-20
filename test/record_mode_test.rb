@@ -61,7 +61,7 @@ class TestRecordMode < Minitest::Test
   def test_recording_mode_gets_block_args_too
     mock = flexmock("mock")
     mock.should_expect do |r|
-      r.f(1, Proc) { |arg, block|
+      r.f(1) { |arg, &block|
         refute_nil block
         block.call
       }

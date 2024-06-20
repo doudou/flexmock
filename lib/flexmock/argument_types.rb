@@ -47,10 +47,6 @@ class FlexMock
     def ducktype(*methods)
       DuckMatcher.new(methods)
     end
-
-    def optional_proc
-      OPTIONAL_PROC_MATCHER
-    end
   end
   extend ArgumentTypes
 

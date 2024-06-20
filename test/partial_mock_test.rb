@@ -74,8 +74,8 @@ class TestStubbing < Minitest::Test
 
   def test_stubbed_methods_can_take_blocks
     obj = Object.new
-    flexmock(obj).should_receive(:with_block).once.with(Proc).
-      and_return { |block| block.call }
+    flexmock(obj).should_receive(:with_block).once.with_block.
+      and_return { |&block| block.call }
     assert_equal :block, obj.with_block { :block }
   end
 

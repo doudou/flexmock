@@ -10,7 +10,7 @@ spec = Gem::Specification.new do |s|
     interface is simple, it is very flexible.
   }
 
-  s.required_ruby_version = ">= 2.2"
+  s.required_ruby_version = ">= 3.0"
 
   s.license = 'MIT'
 
@@ -19,7 +19,6 @@ spec = Gem::Specification.new do |s|
   s.add_development_dependency 'minitest', ">= 5.0"
   s.add_development_dependency 'rake'
   s.add_development_dependency 'simplecov', '>= 0.11.0'
-  s.add_development_dependency 'coveralls'
 
   #### Which files are to be included in this gem?  Everything!  (Except CVS directories.)
 

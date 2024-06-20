@@ -83,19 +83,4 @@ class FlexMock
       "ducktype(#{@methods.map{|m| m.inspect}.join(',')})"
     end
   end
-
-  ####################################################################
-  # Match objects that implement all the methods in +methods+.
-  class OptionalProcMatcher
-    def initialize
-    end
-    def ===(target)
-      ArgumentMatching.missing?(target) || Proc === target
-    end
-    def inspect
-      "optional_proc"
-    end
-  end
-  OPTIONAL_PROC_MATCHER = OptionalProcMatcher.new
-
 end

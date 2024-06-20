@@ -67,7 +67,7 @@ class TestSpys < Minitest::Test
 
   def test_spy_detects_a_block
     @spy.foo { }
-    assert_spy_called @spy, :foo, Proc
+    assert_spy_called @spy, {:with_block => true}, :foo
   end
 
   def test_spy_rejects_a_block
@@ -87,7 +87,7 @@ class TestSpys < Minitest::Test
 
   def test_spy_ignores_block
     @spy.foo { }
-    assert_spy_called @spy, :foo, Proc
+    assert_spy_called @spy, :foo
   end
 
   def test_spy_accepts_correct_additional_validations

@@ -4,9 +4,10 @@ class FlexMock
 
     MISSING_ARG = Object.new
 
-    def all_match?(expected_args, expected_kw, actual_args, actual_kw)
+    def all_match?(expected_args, expected_kw, expected_block, actual_args, actual_kw, actual_block)
       all_match_args?(expected_args, actual_args) &&
-        all_match_kw?(expected_kw, actual_kw)
+        all_match_kw?(expected_kw, actual_kw) &&
+        all_match_block?(expected_block, actual_block)
     end
 
     def all_match_args?(expected_args, actual_args)
@@ -40,6 +41,12 @@ class FlexMock
       return false unless matched_expected_k.size == expected_kw.keys.size
 
       true
+    end
+
+    def all_match_block?(expected_block, actual_block)
+      return true if expected_block.nil?
+
+      !(expected_block ^ actual_block)
     end
 
     # Does the expected argument match the corresponding actual value.

@@ -35,8 +35,8 @@ class FlexMock
     # but at least we will get a good failure message).  Finally,
     # check for expectations that don't have any argument matching
     # criteria.
-    def call(args, kw, call_record=nil)
-      exp = find_expectation(args, kw)
+    def call(args, kw, block, call_record=nil)
+      exp = find_expectation(args, kw, block)
       call_record.expectation = exp if call_record
       FlexMock.check(
         proc { "no matching handler found for " +
@@ -44,7 +44,7 @@ class FlexMock
                "\nDefined expectations:\n  " +
                @expectations.map(&:description).join("\n  ") }
       ) { !exp.nil? }
-      returned_value = exp.verify_call(args, kw)
+      returned_value = exp.verify_call(args, kw, block)
       returned_value
     end
 
@@ -54,11 +54,11 @@ class FlexMock
     end
 
     # Find an expectation matching the given arguments.
-    def find_expectation(args, kw) # :nodoc:
+    def find_expectation(args, kw, block) # :nodoc:
       if @expectations.empty?
-        find_expectation_in(@defaults, args, kw)
+        find_expectation_in(@defaults, args, kw, block)
       else
-        find_expectation_in(@expectations, args, kw)
+        find_expectation_in(@expectations, args, kw, block)
       end
     end
 
@@ -84,9 +84,9 @@ class FlexMock
 
     private
 
-    def find_expectation_in(expectations, args, kw)
-      expectations.find { |e| e.match_args(args, kw) && e.eligible? } ||
-        expectations.find { |e| e.match_args(args, kw) }
+    def find_expectation_in(expectations, args, kw, block)
+      expectations.find { |e| e.match_args(args, kw, block) && e.eligible? } ||
+        expectations.find { |e| e.match_args(args, kw, block) }
     end
   end
 

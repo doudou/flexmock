@@ -88,13 +88,32 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
-  def test_block_example_from_readme
+  def test_with_block_example_from_readme
     FlexMock.use do |m|
-      m.should_receive(:foo).with(Integer,Proc).and_return(:got_block)
+      m.should_receive(:foo).with(Integer).with_block.and_return(:got_block)
       m.should_receive(:foo).with(Integer).and_return(:no_block)
 
       assert_equal :no_block, m.foo(1)
       assert_equal :got_block, m.foo(1) { }
+    end
+  end
+
+  def test_with_no_block_example_from_readme
+    FlexMock.use do |m|
+      m.should_receive(:foo).with(Integer).with_no_block.and_return(:no_block)
+      m.should_receive(:foo).with(Integer).and_return(:got_block)
+
+      assert_equal :no_block, m.foo(1)
+      assert_equal :got_block, m.foo(1) { }
+    end
+  end
+
+  def test_with_optional_block
+    FlexMock.use do |m|
+      m.should_receive(:foo).with(Integer).with_optional_block.twice
+
+      m.foo(1)
+      m.foo(1) {}
     end
   end
 
@@ -467,28 +486,6 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
-  def test_with_optional_proc
-    FlexMock.use('greeter') do |m|
-      m.should_receive(:hi).with(optional_proc).once
-      m.hi { }
-    end
-  end
-
-  def test_with_optional_proc_and_missing_proc
-    FlexMock.use('greeter') do |m|
-      m.should_receive(:hi).with(optional_proc).once
-      m.hi
-    end
-  end
-
-  def test_with_optional_proc_distinquishes_between_nil_and_missing
-    FlexMock.use('greeter') do |m|
-      m.should_receive(:hi).with(optional_proc).never
-      m.should_receive(:hi).with(nil).once
-      m.hi(nil)
-    end
-  end
-
   def test_with_arbitrary_arg_matching
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(FlexMock.on { |arg| arg % 2 == 0 rescue nil }).twice
@@ -552,9 +549,9 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
-  def test_block_arg_given_to_no_args
+  def test_block_arg_given_to_no_block
     FlexMock.use do |m|
-      m.should_receive(:hi).with_no_args.returns(20)
+      m.should_receive(:hi).with_no_block.returns(20)
       assert_mock_failure(check_failed_error, :message =>NO_MATCH_ERROR_MESSAGE, :deep => true, :line => __LINE__+1) {
         m.hi { 1 }
       }
@@ -564,8 +561,9 @@ class TestFlexMockShoulds < Minitest::Test
   def test_block_arg_given_to_matching_proc
     FlexMock.use do |m|
       arg = nil
-      m.should_receive(:hi).with(Proc).once.
-        and_return { |block| arg = block; block.call }
+      m.should_receive(:hi)
+       .with_block.once
+       .and_return { |&block| arg = block; block.call }
       result = m.hi { 1 }
       assert_equal 1, arg.call
       assert_equal 1, result
@@ -1229,11 +1227,14 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
-  def test_a_proc_argument_last_can_be_interpreted_as_positional_argument
+  def test_a_proc_argument_last_is_not_interpreted_as_positional_argument
     FlexMock.use do |mock|
       mock.should_receive(:m).with_signature(required_arguments: 2)
-      mock.m(1) { }
       mock.m(1, 2) { }
+
+      assert_raises(FlexMock::CheckFailedError) do
+        mock.m(1) { }
+      end
     end
   end
 
