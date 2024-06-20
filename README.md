@@ -22,6 +22,54 @@ Only significant changes (new APIs, deprecated APIs or backward-compatible
 changes) are documented here, a.k.a. minor or major version bumps. If you want a
 detailed changelog, go over the commit log in github (it's pretty low-traffic)
 
+3.0.0:
+ - Added keyword argument and explicit proc support. Keyword argument support
+   is Ruby 3.0+ only, getting the support to work on Ruby 2.7 deemed to be too
+   complicated. See the release notes for 2.4 below for information about how
+   migration can be done smoothly
+ - `with` now expects all expected keyword arguments to be explicitly given in a
+   natural way, for instance:
+     
+   ```
+   mock.should_receive(:m).with("some", "args", with: 42)
+   ```
+
+   The values given to the arguments can be any matcher valid for the positional
+   arguments
+ - note that not giving any keyword arguments to `with` is interpreted as a
+   negative (no keyword arguments are expected), and will fail if some arguments
+   are given. Call `with_any_kw_args` after the `with` if you do not desire
+   validation of keyword arguments:
+
+   ```
+   mock.should_receive(:m).with("some", "args").with_any_kw_args
+   ```
+
+ - for more complex matches, pass a match object to the `with_kw_args` method.
+   For instance, to match only some keyword arguments, do
+
+   ```
+   mock.should_receive(:m).with("some", "args").with_kw_args(hsh(with: 42))
+   ```
+
+ - this release also makes matching procs explicit. Instead of passing Proc at
+   the end of `with` as in 2.x, call `with_block` or `with_no_block`. If neither
+   are called, flexmock won't validate either way (ignore whether or not a block
+   was given). The default is to not match blocks, that is working
+ - The default is to assume that blocks are optional (i.e. flexmock will match
+   either way). Nonetheless, the method `with_optional_block` is implemented
+   to help migration from flexmock 2.4.0 (but is a no-op).
+
+2.4.0:
+ - forward-compatible implementation of `with_kw_args`, `with_any_kw_args`,
+   `with_block` and `with_no_block`. The objective of this release is to ensure
+   that any test changes needed to handle Ruby 3 (along with flexmock 3) can run
+   on ruby 2.7 and flexmock 2.4
+ - the default behavior of flexmock 2 regarding proc matching, that is that one
+   needs to match them explicitly, is unchanged. Use `with_optional_block` instead
+   of passing `optional_proc` to `with`, to match optionally (IMPORTANT
+   the explicit `with` methods that match blocks are called `block`, not `proc`)
+
 2.3.0:
  - implemented validation of call arity for partial mocks. By setting
      FlexMock.partials_verify_signatures = true
@@ -546,12 +594,10 @@ determining whether a given expectation matches or not.
   series. The last value will be repeatably returned if the number of
   matching calls exceeds the number of values.
 
-* <b>and_return { |<em>args</em>, ...|  <em>code</em> ... }</b>
+* <b>and_return { |<em>*args</em>, <em>**kw</em>, <em>&block</em>|  <em>code</em> ... }</b>
 
   Declares that the expected message will return the yielded value of
   the block. The block will receive all the arguments in the message.
-  If the message was provided a block, it will be passed as the last
-  parameter of the block's argument list.
 
 * <b>returns( ... )</b>
 
@@ -755,14 +801,32 @@ The following rules are used for argument matching:
 
   will match any even integer.
 
-* If you wish to match a method call where a block is given, add
-  `Proc` as the last argument to `with`.
+* By default, flexmock will ignore given blocks, that is it will assume that
+  blocks are optional.
+
+* If you wish to verify that a method call received a block, use `with_block`
 
   Example:
 
 ```ruby
-      m.should_receive(:foo).with(Integer,Proc).and_return(:got_block)
+      m.should_receive(:foo).with(Integer).with_block.and_return(:got_block)
       m.should_receive(:foo).with(Integer).and_return(:no_block)
+```
+
+  will cause the mock to return the following:
+
+```ruby
+     m.foo(1) { } => returns :got_block
+     m.foo(1)     => returns :no_block
+```
+
+* If you wish to verify that a method call does not receive a block, use `with_no_block`
+
+  Example:
+
+```ruby
+      m.should_receive(:foo).with(Integer).with_no_block.and_return(:no_block)
+      m.should_receive(:foo).with(Integer).and_return(:got_block)
 ```
 
   will cause the mock to return the following:
