@@ -170,7 +170,13 @@ class FlexMock
 
     # Whether the given method's original definition has been stored
     def find_original_method(m)
-      it = @obj.method(m)
+      it =
+        if m.respond_to?(:to_str) || m.respond_to?(:to_sym)
+          @obj.method(m)
+        else
+          m
+        end
+
       while it && (it.owner != @proxy_definition_module)
         it = it.super_method
       end
@@ -203,6 +209,10 @@ class FlexMock
           @proxy_definition_module.method_defined?(m)
     end
 
+    def flexmock_plain_new_method?(m)
+      m.name == :new && m.owner == Class
+    end
+
     def flexmock_define_expectation(location, *args, **kw)
       EXP_BUILDER.parse_should_args(self, args, kw) do |method_name|
         if !has_proxied_method?(method_name)
@@ -211,7 +221,12 @@ class FlexMock
         ex = @mock.flexmock_define_expectation(location, method_name)
         if FlexMock.partials_verify_signatures
           if (existing_method = find_original_method(method_name))
-            ex.with_signature_matching(existing_method)
+            if flexmock_plain_new_method?(existing_method)
+              # Look for the signature of `initialize` instead
+              ex.with_signature_matching(@obj.instance_method(:initialize))
+            else
+              ex.with_signature_matching(existing_method)
+            end
           end
         end
         ex.mock = self

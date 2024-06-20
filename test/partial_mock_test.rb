@@ -769,5 +769,50 @@ class TestStubbing < Minitest::Test
     FlexMock.partials_are_based = false
     FlexMock.partials_verify_signatures = false
   end
+
+  def test_can_call_the_original_method_from_and_return
+    obj = Dog.new
+    flexmock(obj)
+    called = false
+    obj.should_receive(:bark).once.and_return do
+      called = true
+      obj.invoke_original(:bark)
+    end
+    assert_equal :woof, obj.bark
+    assert called
+  end
+
+  class PartialsNewSignature
+    def initialize(arg, with_kw: nil)
+    end
+  end
+
+  def test_it_lets_new_be_called_if_the_signature_matches_initialize
+    FlexMock.partials_verify_signatures = true
+
+    flexmock(PartialsNewSignature)
+      .should_receive(:new).with(10, with_kw: 20)
+
+    PartialsNewSignature.new(10, with_kw: 20)
+  ensure
+    FlexMock.partials_verify_signatures = true
+  end
+
+  def test_it_fails_the_signature_check_if_a_call_to_new_is_compatible_with_the_signature_of_initialize
+    FlexMock.partials_verify_signatures = true
+
+    flexmock(PartialsNewSignature)
+      .should_receive(:new).with(10, something: 20)
+
+    e = assert_raises(FlexMock::CheckFailedError) do
+      PartialsNewSignature.new(10, something: 20)
+    end
+    assert_match(
+      /given.unexpected.keyword.argument.something/,
+      e.message
+    )
+  ensure
+    FlexMock.partials_verify_signatures = true
+  end
 end
 
