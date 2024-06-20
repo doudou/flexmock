@@ -37,6 +37,7 @@ class FlexMock
       @sym = sym
       @location = location
       @expected_args = nil
+      @expected_kw_args = nil
       @count_validators = []
       @signature_validator = SignatureValidator.new(self)
       @count_validator_class = ExactCountValidator
@@ -171,7 +172,30 @@ class FlexMock
     # Does the argument list match this expectation's argument
     # specification.
     def match_args(args)
-      ArgumentMatching.all_match?(@expected_args, args)
+      expected_args =
+        if @expected_kw_args
+          if @expected_args&.last == Proc && @expected_block.nil?
+            @expected_args[0..-2] + [@expected_kw_args, Proc]
+          else
+            (@expected_args || []) + [@expected_kw_args]
+          end
+        else
+          @expected_args
+        end
+
+      if @expected_block
+        expected_args = (expected_args || []) + [Proc]
+      end
+
+      ArgumentMatching.all_match?(expected_args, args)
+    end
+
+    def with_block
+      @expected_block = true
+    end
+
+    def with_no_block
+      @expected_block = false
     end
 
     # Declare that the method should expect the given argument list.
@@ -189,6 +213,20 @@ class FlexMock
     # arguments of any type.
     def with_any_args
       @expected_args = nil
+      self
+    end
+
+    # Declare that the method can be called with any number of
+    # arguments of any type.
+    def with_kw_args(matcher)
+      @expected_kw_args = matcher
+      self
+    end
+
+    # Declare that the method can be called with any number of
+    # arguments of any type.
+    def with_any_kw_args
+      @expected_kw_args = FlexMock.any
       self
     end
 
