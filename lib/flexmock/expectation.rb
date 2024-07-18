@@ -38,6 +38,7 @@ class FlexMock
       @location = location
       @expected_args = nil
       @expected_kw_args = nil
+      @expected_block = nil
       @count_validators = []
       @signature_validator = SignatureValidator.new(self)
       @count_validator_class = ExactCountValidator
@@ -92,42 +93,55 @@ class FlexMock
 
     # Verify the current call with the given arguments matches the
     # expectations recorded in this object.
-    def verify_call(*args)
+    def verify_call(*args, &block)
       validate_eligible
       validate_order
-      validate_signature(args)
+      enhanced_args =
+        if block
+          args + [block]
+        else
+          args
+        end
+
+      validate_signature(enhanced_args)
       @actual_count += 1
-      perform_yielding(args)
-      return_value(args)
+      perform_yielding(args, block)
+      return_value(args, block)
     end
 
     # Public return value (odd name to avoid accidental use as a
     # constraint).
-    def _return_value(args) # :nodoc:
-      return_value(args)
+    def _return_value(args, block) # :nodoc:
+      return_value(args, block)
     end
 
     # Find the return value for this expectation. (private version)
-    def return_value(args)
+    def return_value(args, block)
       case @return_queue.size
       when 0
-        block = lambda { |*a| @return_value }
+        ret_block = lambda { |*a| @return_value }
       when 1
-        block = @return_queue.first
+        ret_block = @return_queue.first
       else
-        block = @return_queue.shift
+        ret_block = @return_queue.shift
       end
-      block.call(*args)
+
+      if @expected_block
+        ret_block.call(*args, &block)
+      elsif block
+        ret_block.call(*args, block)
+      else
+        ret_block.call(*args)
+      end
     end
     private :return_value
 
     # Yield stored values to any blocks given.
-    def perform_yielding(args)
+    def perform_yielding(args, block)
       @return_value = nil
       unless @yield_queue.empty?
-        block = args.last
         values = (@yield_queue.size == 1) ? @yield_queue.first : @yield_queue.shift
-        if block && block.respond_to?(:call)
+        if block
           values.each do |v|
             @return_value = block.call(*v)
           end
@@ -174,8 +188,8 @@ class FlexMock
     def match_args(args)
       expected_args =
         if @expected_kw_args
-          if @expected_args&.last == Proc && @expected_block.nil?
-            @expected_args[0..-2] + [@expected_kw_args, Proc]
+          if proc_matcher?(@expected_args&.last) && @expected_block.nil?
+            @expected_args[0..-2] + [@expected_kw_args, @expected_args[-1]]
           else
             (@expected_args || []) + [@expected_kw_args]
           end
@@ -184,14 +198,22 @@ class FlexMock
         end
 
       if @expected_block
-        expected_args = (expected_args || []) + [Proc]
+        expected_args = (expected_args || []) + [@expected_block]
       end
 
       ArgumentMatching.all_match?(expected_args, args)
     end
 
+    def proc_matcher?(obj)
+      obj == Proc || obj == OPTIONAL_PROC_MATCHER
+    end
+
+    def with_optional_block
+      @expected_block = OPTIONAL_PROC_MATCHER
+    end
+
     def with_block
-      @expected_block = true
+      @expected_block = Proc
     end
 
     def with_no_block

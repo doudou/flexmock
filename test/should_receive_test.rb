@@ -90,11 +90,13 @@ class TestFlexMockShoulds < Minitest::Test
 
   def test_block_example_from_readme
     FlexMock.use do |m|
-      m.should_receive(:foo).with(Integer,Proc).and_return(:got_block)
+      m.should_receive(:foo).with(1,Proc).and_return(:got_block)
+      m.should_receive(:foo).with(2).with_block.and_return(:got_explicit_block)
       m.should_receive(:foo).with(Integer).and_return(:no_block)
 
       assert_equal :no_block, m.foo(1)
       assert_equal :got_block, m.foo(1) { }
+      assert_equal :got_explicit_block, m.foo(2) { }
     end
   end
 
@@ -437,6 +439,60 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_with_kw_args_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_kw_args(some: 10)
+      m.hi(some: 10)
+    end
+  end
+
+  def test_with_kw_args_non_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(20).with_kw_args(some: 10)
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(some: 20)
+      }
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi
+      }
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(20)
+      }
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(some: 10, other: 42)
+      }
+    end
+  end
+
+  def test_with_kw_args_and_implicit_proc_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(42, Proc).with_kw_args(some: 10)
+      m.hi(42, some: 10) { }
+    end
+  end
+
+  def test_with_kw_args_and_implicit_proc_non_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(42, Proc).with_kw_args(some: 10)
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(15, some: 10) {}
+      }
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(42, some: 10)
+      }
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(42, some: 20) {}
+      }
+    end
+  end
+
+  def test_with_kw_args_object_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_kw_args(hsh(some: 10))
+      m.hi(some: 10, other: 20)
+    end
+  end
+
   def test_with_equal_arg_nonmatching
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(FlexMock.eq(Object)).never
@@ -465,6 +521,62 @@ class TestFlexMockShoulds < Minitest::Test
       m.should_receive(:hi).with(optional_proc).never
       m.should_receive(:hi).with(nil).once
       m.hi(nil)
+    end
+  end
+
+  def test_explicit_with_optional_block
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_optional_block.once
+      m.hi { }
+    end
+  end
+
+  def test_explicit_with_optional_proc_and_missing_proc
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_optional_block.once
+      m.hi
+    end
+  end
+
+  def test_explicit_with_optional_proc_distinquishes_between_nil_and_missing
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_optional_block.never
+      m.should_receive(:hi).with(nil).once
+      m.hi(nil)
+    end
+  end
+
+  def test_with_optional_proc_and_explicit_kw_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(optional_proc).with_kw_args(some: 10).twice
+      m.hi(some: 10) {}
+      m.hi(some: 10)
+    end
+  end
+
+  def test_with_optional_proc_and_explicit_kw_non_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with(optional_proc).with_kw_args(some: 10)
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(some: 20) {}
+      }
+    end
+  end
+
+  def test_explicit_with_optional_block_and_explicit_kw_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_optional_block.with_kw_args(some: 10).twice
+      m.hi(some: 10) {}
+      m.hi(some: 10)
+    end
+  end
+
+  def test_explicit_with_optional_block_and_explicit_kw_non_matching
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_optional_block.with_kw_args(some: 10)
+      assert_mock_failure(check_failed_error, :deep => true, :line => __LINE__+1) {
+        m.hi(some: 20) {}
+      }
     end
   end
 
@@ -545,6 +657,17 @@ class TestFlexMockShoulds < Minitest::Test
       arg = nil
       m.should_receive(:hi).with(Proc).once.
         and_return { |block| arg = block; block.call }
+      result = m.hi { 1 }
+      assert_equal 1, arg.call
+      assert_equal 1, result
+    end
+  end
+
+  def test_block_arg_given_to_matching_proc_explicit
+    FlexMock.use do |m|
+      arg = nil
+      m.should_receive(:hi).with_block.once.
+        and_return { |&block| arg = block; block.call }
       result = m.hi { 1 }
       assert_equal 1, arg.call
       assert_equal 1, result

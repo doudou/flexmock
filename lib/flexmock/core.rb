@@ -147,7 +147,7 @@ class FlexMock
       if flexmock_closed?
         FlexMock.undefined
       elsif exp = flexmock_expectations_for(sym)
-        exp.call(enhanced_args, call_record)
+        exp.call(args, block, call_record)
       elsif @base_class && @base_class.flexmock_defined?(sym)
         FlexMock.undefined
       elsif @ignore_missing

@@ -35,8 +35,10 @@ class FlexMock
     # but at least we will get a good failure message).  Finally,
     # check for expectations that don't have any argument matching
     # criteria.
-    def call(args, call_record=nil)
-      exp = find_expectation(*args)
+    def call(args, block = nil, call_record=nil)
+      find_args = args.dup
+      find_args << block if block
+      exp = find_expectation(*find_args)
       call_record.expectation = exp if call_record
       FlexMock.check(
         proc { "no matching handler found for " +
@@ -44,7 +46,7 @@ class FlexMock
                "\nDefined expectations:\n  " +
                @expectations.map(&:description).join("\n  ") }
       ) { !exp.nil? }
-      returned_value = exp.verify_call(*args)
+      returned_value = exp.verify_call(*args, &block)
       returned_value
     end
 
