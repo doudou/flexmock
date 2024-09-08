@@ -637,6 +637,20 @@ class TestStubbing < Minitest::Test
     assert_equal "undefined method `does_not_exist' for #{obj}", exception.message
   end
 
+  def test_pass_thru_forwards_a_given_block
+    obj = Class.new do
+      attr_reader :block
+      def mocked_method(&block)
+        @block = block
+      end
+    end.new
+    flexmock(obj).should_receive(:mocked_method).with_block.pass_thru
+
+    block = obj.mocked_method { 42 }
+    assert_kind_of Proc, block
+    assert_equal block, obj.block
+  end
+
   def test_it_checks_whether_mocks_are_forbidden_before_forwarding_the_call
       obj = Class.new
       flexmock(obj).should_receive(:mocked).never
