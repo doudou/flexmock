@@ -392,9 +392,9 @@ class FlexMock
 
     def pass_thru(&block)
       block ||= lambda { |value| value }
-      and_return { |*args, **kw|
+      and_return { |*args, **kw, &orig_block|
         begin
-          block.call(@mock.flexmock_invoke_original(@sym, args, kw))
+          block.call(@mock.flexmock_invoke_original(@sym, args, kw, orig_block))
         rescue NoMethodError => e
           if e.name == @sym
             raise e, "#{e.message} while performing #pass_thru in expectation object #{self}"

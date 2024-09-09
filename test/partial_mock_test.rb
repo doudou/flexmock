@@ -752,6 +752,20 @@ class TestStubbing < Minitest::Test
     assert_equal 1, obj.value
   end
 
+  def test_pass_thru_forwards_a_given_block
+    obj = Class.new do
+      attr_reader :block
+      def mocked_method(&block)
+        @block = block
+      end
+    end.new
+    flexmock(obj).should_receive(:mocked_method).with_block.pass_thru
+
+    block = obj.mocked_method { 42 }
+    assert_kind_of Proc, block
+    assert_equal block, obj.block
+  end
+
   def test_should_expect
     flexmock(obj = Dog.new).should_expect do |e|
       e.bark

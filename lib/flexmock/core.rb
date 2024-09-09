@@ -206,7 +206,7 @@ class FlexMock
 
   # Invocke the original non-mocked functionality for the given
   # symbol.
-  def flexmock_invoke_original(method_name, args, kw = {})
+  def flexmock_invoke_original(method_name, args, kw = {}, orig_block = nil)
     return FlexMock.undefined
   end
 
