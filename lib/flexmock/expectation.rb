@@ -128,7 +128,7 @@ class FlexMock
 
       if @expected_block
         ret_block.call(*args, &block)
-      elsif block
+      elsif block && @expected_block.nil?
         ret_block.call(*args, block)
       else
         ret_block.call(*args)
@@ -407,6 +407,12 @@ class FlexMock
       block ||= lambda { |value| value }
       and_return { |*args, &orig_block|
         begin
+          if @expected_block.nil? && !orig_block
+            if Proc === args.last
+              orig_block = args.last
+              args = args[0..-2]
+            end
+          end
           block.call(@mock.flexmock_invoke_original(@sym, args, orig_block))
         rescue NoMethodError => e
           if e.name == @sym
@@ -414,7 +420,7 @@ class FlexMock
           else
             raise
           end
-        end 
+        end
       }
     end
 
