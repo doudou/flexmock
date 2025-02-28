@@ -29,8 +29,10 @@ class TestNewInstances < Minitest::Test
 
   class Cat
     attr_reader :name
-    def initialize(name, &block)
+    attr_reader :kw
+    def initialize(name, **kw, &block)
       @name = name
+      @kw = kw
       block.call(self) if block_given?
     end
   end
@@ -94,10 +96,11 @@ class TestNewInstances < Minitest::Test
       obj.should_receive(:meow).and_return(:scratch)
     end
     x = :not_called
-    m = Cat.new("Fido") { x = :called }
+    m = Cat.new("Fido", a: 42) { x = :called }
     assert_equal :scratch,  m.meow
     assert_equal "Fido", m.name
     assert_equal :called, x
+    assert_equal({ a: 42 }, m.kw)
   end
 
   # Some versions of the software had problems invoking the block after a
