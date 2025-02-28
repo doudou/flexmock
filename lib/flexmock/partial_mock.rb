@@ -287,7 +287,12 @@ class FlexMock
                 r.apply(mock)
               end
             end
-            super(*args, **kw, &block)
+            if kw.empty?
+              # Workaround kw arg support for ruby < 2.7
+              super(*args, &block)
+            else
+              super(*args, **kw, &block)
+            end
           end
         end
         override = @initialize_override
