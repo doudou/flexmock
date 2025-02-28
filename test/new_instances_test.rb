@@ -108,13 +108,13 @@ class TestNewInstances < Minitest::Test
   def test_new_gets_block_after_restubbing
     flexstub(Cat).new_instances { }
     x = :not_called
-    m = Cat.new("Fido") { x = :called }
+    Cat.new("Fido") { x = :called }
     assert_equal :called, x
     flexmock_teardown
 
     flexstub(Cat).new_instances { }
     x = :not_called
-    m = Cat.new("Fido") { x = :called }
+    Cat.new("Fido") { x = :called }
     assert_equal :called, x
   end
 

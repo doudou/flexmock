@@ -27,8 +27,8 @@ module ExtendedShouldReceiveTests
 
   def test_contraints_apply_to_all_expectations
     @mock.should_receive(:foo, :bar => :baz).with(1)
-    ex = assert_raises(check_failed_error) { @obj.foo(2) }
-    ex = assert_raises(check_failed_error) { @obj.bar(2) }
+    assert_raises(check_failed_error) { @obj.foo(2) }
+    assert_raises(check_failed_error) { @obj.bar(2) }
     assert_equal :baz, @obj.bar(1)
   end
 
