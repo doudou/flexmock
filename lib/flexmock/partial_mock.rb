@@ -276,7 +276,7 @@ class FlexMock
         expectation_blocks    = @initialize_expectation_blocks = Array.new
         expectation_recorders = @initialize_expectation_recorders = Array.new
         @initialize_override = Module.new do
-          define_method :initialize do |*args, &block|
+          define_method :initialize do |*args, **kw, &block|
             if self.class.respond_to?(:__flexmock_proxy) && (mock = self.class.__flexmock_proxy)
               container = mock.flexmock_container
               mock = container.flexmock(self)
@@ -287,7 +287,12 @@ class FlexMock
                 r.apply(mock)
               end
             end
-            super(*args, &block)
+            if kw.empty?
+              # Workaround kw arg support for ruby < 2.7
+              super(*args, &block)
+            else
+              super(*args, **kw, &block)
+            end
           end
         end
         override = @initialize_override
