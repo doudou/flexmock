@@ -241,7 +241,12 @@ class FlexMock
     # Declare that the method can be called with any number of
     # arguments of any type.
     def with_kw_args(matcher)
-      @expected_kw_args = matcher
+      @expected_kw_args =
+        if matcher.kind_of?(Hash)
+          KwArgsMatcher.new(matcher)
+        else
+          matcher
+        end
       self
     end
 

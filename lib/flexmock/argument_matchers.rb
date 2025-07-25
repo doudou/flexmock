@@ -68,6 +68,23 @@ class FlexMock
   end
 
   ####################################################################
+  # Match hashes that match all the fields of +hash+.
+  class KwArgsMatcher
+    def initialize(expected)
+      @expected = expected
+    end
+    def ===(target)
+      return false unless target.kind_of?(Hash)
+      return false unless @expected.all? { |k, v| v === target[k] }
+
+      @expected.size == target.size
+    end
+    def inspect
+      "kw(#{@expected.inspect})"
+    end
+  end
+
+  ####################################################################
   # Match objects that implement all the methods in +methods+.
   class DuckMatcher
     def initialize(methods)
