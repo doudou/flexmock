@@ -3,7 +3,8 @@ class FlexMock
   # A composite expectation allows several expectations to be grouped into a
   # single composite and then apply the same constraints to  all expectations
   # in the group.
-  class CompositeExpectation
+  class CompositeExpectation < BasicObject
+    attr_reader :expectations
 
     # Initialize the composite expectation.
     def initialize

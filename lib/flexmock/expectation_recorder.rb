@@ -34,7 +34,7 @@ class FlexMock
     def apply(mock)
       obj = mock
       @expectations.each do |sym, args, block|
-        obj = obj.send(sym, *args, &block)
+        obj = obj.__send__(sym, *args, &block)
       end
     end
   end
