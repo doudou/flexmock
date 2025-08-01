@@ -5,7 +5,7 @@ class TestFlexMockShoulds < Minitest::Test
     k = Class.new { def m(req_a:, req_b:, opt_c: 10, **kw_splat); end }
     FlexMock.use do |mock|
       e = mock.should_receive(:test).with_signature_matching(k.instance_method(:m))
-      e = e.instance_variable_get(:@expectations).first
+      e = e.expectations.first
       validator = e.instance_variable_get(:@signature_validator)
       assert_equal 0, validator.required_arguments
       assert_equal 0, validator.optional_arguments
