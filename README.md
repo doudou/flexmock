@@ -22,6 +22,16 @@ Only significant changes (new APIs, deprecated APIs or backward-compatible
 changes) are documented here, a.k.a. minor or major version bumps. If you want a
 detailed changelog, go over the commit log in github (it's pretty low-traffic)
 
+2.4.0:
+ - forward-compatible implementation of `with_kw_args`, `with_any_kw_args`,
+   `with_block` and `with_no_block`. The objective of this release is to ensure
+   that any test changes needed to handle Ruby 3 (along with flexmock 3) can run
+   on ruby 2.7 and flexmock 2.4
+ - the default behavior of flexmock 2 regarding proc matching, that is that one
+   needs to match them explicitly, is unchanged. Use `with_optional_block` instead
+   of passing `optional_proc` to `with`, to match optionally (IMPORTANT
+   the explicit `with` methods that match blocks are called `block`, not `proc`)
+
 2.3.0:
  - implemented validation of call arity for partial mocks. By setting
      FlexMock.partials_verify_signatures = true
