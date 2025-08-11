@@ -446,6 +446,32 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_with_kw_args_matches_values_separately
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_kw_args(a: on { |v| v == 1 }, b: 2).once
+      m.hi(a: 1, b: 2)
+    end
+  end
+
+  def test_with_kw_args_raises_if_an_expected_key_is_missing
+    assert_raises(FlexMock::CheckFailedError) do
+      FlexMock.use('greeter') do |m|
+        m.should_receive(:hi).with_kw_args(a: on { |v| v == 1 }, b: 2).once
+        m.hi(a: 1)
+      end
+    end
+  end
+
+  def test_with_kw_args_raises_if_there_is_an_actual_key_too_much
+    assert_raises(FlexMock::CheckFailedError) do
+      FlexMock.use('greeter') do |m|
+        m.should_receive(:hi).with_kw_args(a: on { |v| v == 1 }, b: 2).once
+        m.hi(a: 1, b: 2, c: 3)
+      end
+    end
+  end
+
+
   def test_with_kw_args_non_matching
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(20).with_kw_args(some: 10)
