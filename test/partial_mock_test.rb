@@ -828,5 +828,61 @@ class TestStubbing < Minitest::Test
   ensure
     FlexMock.partials_verify_signatures = true
   end
+
+  class InitializeWithKwargs
+    attr_reader :some, :args, :kw
+
+    def initialize(some, args, **kw)
+      @some = some
+      @args = args
+      @kw = kw
+    end
+  end
+
+  def test_initialize_stub_handles_keyword_arguments_on_initialize
+    flexmock(InitializeWithKwargs)
+      .new_instances.should_receive(:test)
+    obj = InitializeWithKwargs.new(21, 42, kw: 84)
+    assert_equal 21, obj.some
+    assert_equal 42, obj.args
+    assert_equal({ kw: 84 }, obj.kw)
+  end
+
+  def test_initialize_stub_handles_empty_keyword_arguments_on_initialize
+    flexmock(InitializeWithKwargs)
+      .new_instances.should_receive(:test)
+    obj = InitializeWithKwargs.new(21, 42)
+    assert_equal 21, obj.some
+    assert_equal 42, obj.args
+    assert_equal({}, obj.kw)
+  end
+
+  class InitializeWithTrailingHashArg
+    attr_reader :some, :args, :kw
+
+    def initialize(some, args, kw)
+      @some = some
+      @args = args
+      @kw = kw
+    end
+  end
+
+  def test_initialize_stub_handles_a_trailing_hash_on_initialize
+    flexmock(InitializeWithTrailingHashArg)
+      .new_instances.should_receive(:test)
+    obj = InitializeWithTrailingHashArg.new(21, 42, kw: 84)
+    assert_equal 21, obj.some
+    assert_equal 42, obj.args
+    assert_equal({ kw: 84 }, obj.kw)
+  end
+
+  def test_initialize_stub_handles_an_empty_trailing_hash_on_initialize
+    flexmock(InitializeWithTrailingHashArg)
+      .new_instances.should_receive(:test)
+    obj = InitializeWithTrailingHashArg.new(21, 42, {})
+    assert_equal 21, obj.some
+    assert_equal 42, obj.args
+    assert_equal({}, obj.kw)
+  end
 end
 
