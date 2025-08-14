@@ -477,6 +477,29 @@ class TestFlexMockShoulds < Minitest::Test
     end
   end
 
+  def test_with_kw_args_matching_with_case_operator
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_kw_args(some: 9..11)
+      m.hi(some: 10)
+    end
+  end
+
+  def test_with_kw_args_matching_with_equality_operator
+    FlexMock.use('greeter') do |m|
+      m.should_receive(:hi).with_kw_args(some: 9..11)
+      m.hi(some: 9..11)
+    end
+  end
+
+  def test_with_kw_args_matching_strictly_with_equality_with_the_eq_operator
+    assert_raises(FlexMock::CheckFailedError) do
+      FlexMock.use('greeter') do |m|
+        m.should_receive(:hi).with_kw_args(some: eq(9..11))
+        m.hi(some: 10)
+      end
+    end
+  end
+
   def test_with_kw_not_matching
     FlexMock.use('greeter') do |m|
       m.should_receive(:hi).with(1, a: 2)
