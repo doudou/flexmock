@@ -97,6 +97,18 @@ class FlexMock
       end
     end
 
+    # Class method to format a list of args (the part between the
+    # parenthesis).
+    def format_kw_args(args)
+      if args
+        FlexMock.forbid_mocking("<recursive call to mocked method in #inspect>") do
+          args.inspect
+        end
+      else
+        "**args"
+      end
+    end
+
     # Check will assert the block returns true.  If it doesn't, an
     # assertion failure is triggered with the given message.
     def check(msg, &block)  # :nodoc:

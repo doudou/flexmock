@@ -65,6 +65,7 @@ class FlexMock
     def description
       result = ["should_receive(#{@sym.inspect})"]
       result << ".with(#{FlexMock.format_args(@expected_args)})" if @expected_args
+      result << ".with_kw_args(#{FlexMock.format_kw_args(@expected_kw_args)})" if @expected_kw_args
       @count_validators.each do |validator|
         result << validator.describe
       end
