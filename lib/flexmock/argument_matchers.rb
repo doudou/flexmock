@@ -75,7 +75,10 @@ class FlexMock
     end
     def ===(target)
       return false unless target.kind_of?(Hash)
-      return false unless @expected.all? { |k, v| v === target[k] }
+      matching = @expected.all? do |k, v|
+        v === target[k] || v == target[k]
+      end
+      return false unless matching
 
       @expected.size == target.size
     end
