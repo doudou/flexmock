@@ -75,12 +75,28 @@ class FlexMock
     end
     def ===(target)
       return false unless target.kind_of?(Hash)
-      return false unless @expected.all? { |k, v| v === target[k] }
+      matching = @expected.all? do |k, v|
+        v === target[k] || v == target[k]
+      end
+      return false unless matching
 
       @expected.size == target.size
     end
     def inspect
-      "kw(#{@expected.inspect})"
+      args = @expected.map do |k, v|
+        k_s = case k
+        when Symbol
+          "#{k}: "
+        else
+          "#{k.inspect} => "
+        end
+
+        v_s = FlexMock.forbid_mocking("<recursive call to mocked method in #inspect>") do
+          v.inspect
+        end
+        "#{k_s}#{v_s}"
+      end
+      args.join(", ")
     end
   end
 
