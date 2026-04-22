@@ -46,9 +46,10 @@ class BasedPartialsTest < Minitest::Test
 
   def test_based_partials_disallow_stubbing_undefined_methods
     dog = Dog.new
-    assert_raises(NoMethodError, /cannot stub.*wag.*explicitly/) do
+    ex = assert_raises(NoMethodError) do
       flexmock(dog).should_receive(:wag => :mock_value)
     end
+    assert_match(/Cannot stub.*wag.*explicitly/m, ex.message)
   end
 
   def test_based_partials_allow_explicitly_stubbing_undefined_methods
