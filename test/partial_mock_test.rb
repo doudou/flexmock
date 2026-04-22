@@ -457,9 +457,10 @@ class TestStubbing < Minitest::Test
   def test_partial_mocks_disallow_stubbing_undefined_methods_when_using_on
     dog = Dog.new
     flexmock(dog, :on, Dog)
-    assert_raises(NoMethodError, /meow.*explicitly/) do
+    ex = assert_raises(NoMethodError) do
       dog.should_receive(:meow).and_return(:something)
     end
+    assert_match(/meow.*explicitly/m, ex.message)
   end
 
   def test_partial_mocks_properly_detect_methods_defined_through_a_class_hierarchy
@@ -497,9 +498,10 @@ class TestStubbing < Minitest::Test
     def test_based_partial_mocks_require_explicitly_on_a_non_existing_method_of_a_class_singleton
       dog = Class.new
       FlexMock.partials_are_based = true
-      assert_raises(NoMethodError, /bark.*explicitly/) do
+      ex = assert_raises(NoMethodError) do
         flexmock(dog).should_receive(:bark).and_return(:grrr)
       end
+      assert_match(/bark.*explicitly/m, ex.message)
     ensure
       FlexMock.partials_are_based = false
     end
@@ -511,9 +513,10 @@ class TestStubbing < Minitest::Test
       FlexMock.partials_are_based = true
       flexmock(dog).should_receive(:bark).explicitly
       flexmock(chiwawa)
-      assert_raises(NoMethodError, /bark.*explicitly/) do
+      ex = assert_raises(NoMethodError) do
         chiwawa.should_receive(:bark).and_return(:grrr)
       end
+      assert_match(/bark.*explicitly/m, ex.message)
     ensure
       FlexMock.partials_are_based = false
     end
