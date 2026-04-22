@@ -18,7 +18,7 @@ class FlexMock
       end
 
       def describe_spy(spy, sym, args, kw, options, not_clause="")
-        result = "expected "
+        result = +"expected "
         result << FlexMock.format_call(sym, args, kw)
         result << " to#{not_clause} be received by " << spy.inspect
         result << times_description(options[:times])
@@ -29,7 +29,7 @@ class FlexMock
       end
 
       def describe_calls(spy)
-        result = ''
+        result = +''
         if spy.flexmock_calls.empty?
           result << "No messages have been received\n"
         else

@@ -113,7 +113,7 @@ class TestFlexmockContainerMethods < Minitest::Test
   end
 
   def test_stubbing_a_string
-    s = "hello"
+    s = +"hello"
     flexmock(:base, s, :length => 2)
     assert_equal 2, s.length
   end
