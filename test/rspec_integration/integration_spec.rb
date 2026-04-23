@@ -32,7 +32,7 @@ describe "FlexMock in a RSpec example" do
   end
 
   specify "should be able to create a stub" do
-    s = "Hello World"
+    s = +"Hello World"
     flexmock(:base, s).should_receive(:downcase).with().once.and_return("hello WORLD")
 
     expect(s.downcase).to eq("hello WORLD")
